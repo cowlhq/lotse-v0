@@ -7,10 +7,7 @@ import { useState } from "react";
 import { getHealth, getMe, Unauthorized } from "@/api";
 import { Centered } from "@/components/shell/Centered";
 import { CommandMenu } from "@/components/shell/CommandMenu";
-import { Sidebar, Wordmark } from "@/components/shell/Sidebar";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
+import { TopBar } from "@/components/shell/TopBar";
 import { Toaster } from "@/components/ui/sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertDetail, Alerts } from "@/routes/Alerts";
@@ -64,34 +61,17 @@ function Gate() {
 }
 
 function Layout() {
-  const { t } = useTranslation();
   const [search, setSearch] = useState(false);
-  const [menu, setMenu] = useState(false);
   return (
     <FileDrop>
-    <div className="flex h-dvh bg-sidebar">
-      <aside className="hidden w-64 shrink-0 md:block">
-        <Sidebar onSearch={() => setSearch(true)} />
-      </aside>
-      <Sheet open={menu} onOpenChange={setMenu}>
-        <SheetContent side="left" className="w-72 bg-sidebar p-0">
-          <Sidebar onSearch={() => (setMenu(false), setSearch(true))} onNavigate={() => setMenu(false)} />
-        </SheetContent>
-      </Sheet>
-      <div className="flex min-w-0 flex-1 flex-col md:py-2 md:pr-2">
-        <div className="flex h-12 shrink-0 items-center gap-2 border-b bg-background px-3 md:hidden">
-          <Button variant="ghost" size="icon-sm" aria-label={t("nav.menu")} onClick={() => setMenu(true)}>
-            <Menu />
-          </Button>
-          <Wordmark />
-        </div>
-        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-background pb-16 md:rounded-lg md:border md:shadow-xs">
+      <div className="flex min-h-dvh flex-col bg-sidebar">
+        <TopBar onSearch={() => setSearch(true)} />
+        <main className="min-w-0 flex-1 pb-16">
           <Outlet />
         </main>
+        <CommandMenu open={search} onOpenChange={setSearch} />
+        <Toaster position="bottom-right" />
       </div>
-      <CommandMenu open={search} onOpenChange={setSearch} />
-      <Toaster position="bottom-right" />
-    </div>
     </FileDrop>
   );
 }

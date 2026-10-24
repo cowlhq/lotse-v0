@@ -751,11 +751,11 @@
     "themeSystem": "System",
     "themeLight": "Light",
     "themeDark": "Dark",
-    "menu": "Menu",
     "home": "Home",
-    "customers": "Customers",
     "noCustomers": "No customers yet.",
-    "projects": "Projects"
+    "allCustomers": "All customers",
+    "allProjects": "All projects",
+    "allEnvironments": "All environments"
   },
   "tabs": {
     "overview": "Overview",

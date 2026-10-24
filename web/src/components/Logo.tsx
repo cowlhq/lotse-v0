@@ -1,10 +1,11 @@
 // The lotse logo: the pilot flag, white and red, and the name. Outline and
 // name take the colour of the text around them, so the logo suits light and
 // dark alike. From the brand kit, lotse-logo.svg; the name is Schibsted
-// Grotesk Bold (SIL OFL), set as outlines.
-export function Logo({ className }: { className?: string }) {
+// Grotesk Bold (SIL OFL), set as outlines. Only the flag, where there is no
+// room for the name.
+export function Logo({ className, mark = false }: { className?: string; mark?: boolean }) {
   return (
-    <svg viewBox="0 0 160 40" role="img" aria-label="lotse" className={className}>
+    <svg viewBox={mark ? "0 0 40 40" : "0 0 160 40"} role="img" aria-label="lotse" className={className}>
       <path d="M10 2H20V38H10A8 8 0 0 1 2 30V10A8 8 0 0 1 10 2Z" fill="#fff" />
       <path d="M20 2H30A8 8 0 0 1 38 10V30A8 8 0 0 1 30 38H20Z" fill="#d63a2a" />
       <rect x="2" y="2" width="36" height="36" rx="8" fill="none" stroke="currentColor" strokeWidth="3.5" />
