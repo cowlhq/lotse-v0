@@ -15,8 +15,8 @@ export type Grouping<T> = (x: T) => { key: string; label: ReactNode };
 
 function GroupRow({ label, span, drop, hint }: { label: ReactNode; span: number; drop?: DropProps; hint?: ReactNode }) {
   return (
-    <tr className={`border-b transition-colors ${drop?.over ? "bg-brand/10" : "bg-group"}`} {...drop?.handlers}>
-      <td colSpan={span} className={`px-4 py-2 font-medium ${drop?.over ? "shadow-[inset_0_0_0_2px_var(--brand)]" : ""}`}>
+    <tr className={`transition-colors ${drop?.over ? "bg-brand/10" : ""}`} {...drop?.handlers}>
+      <td colSpan={span} className={`px-4 pt-4 pb-1 text-mini text-muted-foreground ${drop?.over ? "shadow-[inset_0_0_0_2px_var(--brand)]" : ""}`}>
         {label}
         {hint && <span className="ml-2 text-mini font-normal text-muted-foreground">{hint}</span>}
       </td>
@@ -40,7 +40,7 @@ type Sort<K extends string> = { key: K; desc: boolean };
 function Head<K extends string>({ k, sort, setSort, children, className = "" }: { k: K; sort: Sort<K>; setSort: (s: Sort<K>) => void; children: ReactNode; className?: string }) {
   const on = sort.key === k;
   return (
-    <th className={`h-10 px-3 font-medium whitespace-nowrap text-muted-foreground first:pl-4 last:pr-4 ${className}`}>
+    <th className={`h-9 px-3 text-mini font-normal whitespace-nowrap text-muted-foreground first:pl-4 last:pr-4 ${className}`}>
       <button type="button" className={`inline-flex items-center gap-1 hover:text-foreground ${on ? "text-foreground" : ""}`} onClick={() => setSort({ key: k, desc: on ? !sort.desc : k !== "name" })}>
         {children}
         {on && (sort.desc ? <ArrowDown className="size-3.5" /> : <ArrowUp className="size-3.5" />)}
@@ -55,15 +55,15 @@ const rank = { crit: 0, warn: 1, unknown: 2, ok: 3 };
 // on a phone, where nothing is pointed at, always.
 const bell = "sm:opacity-0 sm:transition-opacity sm:group-hover/row:opacity-100 sm:focus-within:opacity-100";
 
-// Bar is a share: the number, and a bar that turns amber
-// and red as it fills.
+// Bar is a share: the number, and a grey bar that turns amber and red as
+// it fills; colour only where it needs a look.
 export function Bar({ pct }: { pct: number | null | undefined }) {
   if (pct == null) return <span className="text-muted-foreground">–</span>;
-  const color = pct >= 90 ? "var(--crit)" : pct >= 75 ? "var(--warn)" : "var(--ok)";
+  const color = pct >= 90 ? "var(--crit)" : pct >= 75 ? "var(--warn)" : "color-mix(in oklch, var(--muted-foreground) 55%, transparent)";
   return (
     <div className="flex items-center gap-2.5">
-      <span className="w-9 text-right tabular-nums">{pct < 10 ? pct.toFixed(1) : Math.round(pct)}%</span>
-      <span className="relative h-1.5 w-full min-w-12 overflow-hidden rounded-full bg-[color-mix(in_oklch,var(--foreground)_10%,transparent)]">
+      <span className="w-9 text-right text-muted-foreground tabular-nums">{pct < 10 ? pct.toFixed(1) : Math.round(pct)}%</span>
+      <span className="relative h-1 w-full min-w-12 overflow-hidden rounded-full bg-[color-mix(in_oklch,var(--foreground)_10%,transparent)]">
         <span className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${Math.min(100, Math.max(1.5, pct))}%`, background: color }} />
       </span>
     </div>
@@ -123,10 +123,10 @@ export function HostTable({ hosts, alerts, where, group, move }: { hosts: HostSu
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left">
-        <thead className="border-b">
+        <thead>
           <tr>
             <Head k="name" {...p}>{t("table.host")}</Head>
-            {where && <th className="hidden h-10 px-3 font-medium whitespace-nowrap text-muted-foreground xl:table-cell">{t("table.customer")}</th>}
+            {where && <th className="hidden h-9 px-3 text-mini font-normal whitespace-nowrap text-muted-foreground xl:table-cell">{t("table.customer")}</th>}
             <Head k="cpu" {...p} className="w-[13%]">{t("metric.cpu")}</Head>
             <Head k="mem" {...p} className="hidden w-[13%] sm:table-cell">{t("metric.memory")}</Head>
             <Head k="disk" {...p} className="hidden w-[13%] sm:table-cell">{t("metric.disk")}</Head>
@@ -154,9 +154,9 @@ export function HostTable({ hosts, alerts, where, group, move }: { hosts: HostSu
                 }}
                 onDragEnd={() => (setDragging(null), setOver(null))}
                 {...target?.handlers}
-                className={`group/row cursor-pointer border-b transition-colors last:border-b-0 hover:bg-accent/60 ${dragging?.host.id === h.host.id ? "opacity-40" : ""} ${target?.over ? "bg-brand/5" : ""}`}
+                className={`group/row cursor-pointer transition-colors hover:bg-accent/60 ${dragging?.host.id === h.host.id ? "opacity-40" : ""} ${target?.over ? "bg-brand/5" : ""}`}
               >
-                <td className="relative py-2.5 pr-3 pl-4">
+                <td className="relative py-2 pr-3 pl-4">
                   {move && <GripVertical className="absolute top-1/2 left-0.5 size-3.5 -translate-y-1/2 text-muted-foreground opacity-0 group-hover/row:opacity-60" aria-hidden />}
                   <div className="flex min-w-0 items-center gap-2.5">
                     <StatusIcon level={hostLevel(h, alerts)} />
@@ -193,7 +193,7 @@ export function HostTable({ hosts, alerts, where, group, move }: { hosts: HostSu
               .filter((g) => !sorted.some((h) => group?.(h).key === g.key))
               .map((g) => [
                 <GroupRow key={`e-${g.key}`} label={g.label} span={where ? 8 : 7} drop={drop(g.key)} />,
-                <tr key={`p-${g.key}`} className="border-b last:border-b-0" {...drop(g.key)?.handlers}>
+                <tr key={`p-${g.key}`} {...drop(g.key)?.handlers}>
                   <td colSpan={where ? 8 : 7} className="px-4 py-3 text-mini text-muted-foreground">
                     {t("move.empty")}
                   </td>
@@ -232,11 +232,11 @@ export function CheckTable({ checks, where, group }: { checks: Check[]; where?: 
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left">
-        <thead className="border-b">
+        <thead>
           <tr>
             <Head k="name" {...p}>{t("table.check")}</Head>
-            {where && <th className="hidden h-10 px-3 font-medium whitespace-nowrap text-muted-foreground xl:table-cell">{t("table.customer")}</th>}
-            <th className="hidden h-10 px-3 font-medium text-muted-foreground md:table-cell">{t("table.last24h")}</th>
+            {where && <th className="hidden h-9 px-3 text-mini font-normal whitespace-nowrap text-muted-foreground xl:table-cell">{t("table.customer")}</th>}
+            <th className="hidden h-9 px-3 text-mini font-normal text-muted-foreground md:table-cell">{t("table.last24h")}</th>
             <Head k="latency" {...p} className="w-[10%]">{t("table.response")}</Head>
             <Head k="cert" {...p} className="hidden w-[10%] sm:table-cell">{t("table.certificate")}</Head>
             <th className="w-12" />
@@ -249,8 +249,8 @@ export function CheckTable({ checks, where, group }: { checks: Check[]; where?: 
             const heading = g && (i === 0 || group!(sorted[i - 1]).key !== g.key) ? <GroupRow key={`g-${g.key}`} label={g.label} span={where ? 6 : 5} /> : null;
             return [
               heading,
-              <tr key={c.id} onClick={() => navigate({ to: "/checks/$id", params: { id: String(c.id) } })} className="group/row cursor-pointer border-b transition-colors last:border-b-0 hover:bg-accent/60">
-                <td className="py-2.5 pr-3 pl-4">
+              <tr key={c.id} onClick={() => navigate({ to: "/checks/$id", params: { id: String(c.id) } })} className="group/row cursor-pointer transition-colors hover:bg-accent/60">
+                <td className="py-2 pr-3 pl-4">
                   <div className="flex min-w-0 items-center gap-2.5" title={target(c)}>
                     <StatusIcon level={checkLevel(c)} />
                     <span className="truncate font-medium">{c.name}</span>
@@ -261,7 +261,7 @@ export function CheckTable({ checks, where, group }: { checks: Check[]; where?: 
                 <td className="hidden w-[38%] px-3 md:table-cell">
                   {c.type !== "heartbeat" ? <UptimeBar checkID={c.id} /> : <span className="text-mini text-muted-foreground">{c.last_ping ? t("rows.lastPing", { time: ago(c.last_ping) }) : t("rows.noPing")}</span>}
                 </td>
-                <td className="px-3 tabular-nums whitespace-nowrap">{c.latency_ms != null ? `${Math.round(c.latency_ms)} ms` : <span className="text-muted-foreground">–</span>}</td>
+                <td className="px-3 text-muted-foreground tabular-nums whitespace-nowrap">{c.latency_ms != null ? `${Math.round(c.latency_ms)} ms` : <span className="text-muted-foreground">–</span>}</td>
                 <td className="hidden px-3 tabular-nums whitespace-nowrap sm:table-cell" style={days != null && days < 14 ? { color: "var(--warn)" } : undefined}>
                   {days != null ? t("check.days", { count: days }) : <span className="text-muted-foreground">–</span>}
                 </td>

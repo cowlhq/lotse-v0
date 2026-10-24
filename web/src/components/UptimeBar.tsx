@@ -32,7 +32,7 @@ export function UptimeBar({ checkID, slices = 48, hours = 24 }: { checkID: numbe
     <div className="flex items-center gap-3">
       <div ref={ticksRef} className="flex h-5 min-w-0 flex-1 items-stretch" style={box} aria-label={t("check.uptime")}>
         {shares.map((v, i) => {
-          const color = v == null ? "var(--muted)" : v >= 0.999 ? "var(--ok)" : v >= 0.5 ? "var(--warn)" : "var(--crit)";
+          const color = v == null ? "var(--muted)" : v >= 0.999 ? "var(--ok-soft)" : v >= 0.5 ? "var(--warn)" : "var(--crit)";
           const at = to - hours * 3600 + i * step;
           return (
             <span

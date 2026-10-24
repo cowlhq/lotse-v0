@@ -16,19 +16,20 @@
     --font-mono: 'Fira Mono', ui-monospace, monospace;
     --color-brand: var(--brand);
     --color-group: var(--group);
-    --text-ui: 0.9375rem;
-    --text-ui--line-height: 1.5rem;
-    --text-mini: 0.84375rem;
-    --text-mini--line-height: 1.25rem;
-    --text-xs: 0.8125rem;
-    --text-xs--line-height: 1.125rem;
-    --text-sm: 0.9375rem;
-    --text-sm--line-height: 1.5rem;
+    --text-ui: 0.875rem;
+    --text-ui--line-height: 1.375rem;
+    --text-mini: 0.8125rem;
+    --text-mini--line-height: 1.125rem;
+    --text-xs: 0.75rem;
+    --text-xs--line-height: 1rem;
+    --text-sm: 0.875rem;
+    --text-sm--line-height: 1.375rem;
     --text-base: 1rem;
     --text-base--line-height: 1.5rem;
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
     --color-ok: var(--ok);
+    --color-ok-soft: var(--ok-soft);
     --color-warn: var(--warn);
     --color-crit: var(--crit);
     --color-unknown: var(--unknown);
@@ -97,6 +98,8 @@
     --ring: oklch(0.55 0.19 277);
     --brand: oklch(0.52 0.2 277);
     --ok: oklch(0.6 0.17 150);
+    /* OK where it is only the ground, such as a day without trouble. */
+    --ok-soft: oklch(0.85 0.09 152);
     --warn: oklch(0.72 0.18 62);
     --crit: oklch(0.57 0.23 27);
     --unknown: oklch(0.6 0.01 275);
@@ -138,6 +141,7 @@
     --ring: oklch(0.66 0.13 277);
     --brand: oklch(0.6 0.19 277);
     --ok: oklch(0.75 0.18 150);
+    --ok-soft: oklch(0.48 0.09 152);
     --warn: oklch(0.83 0.17 72);
     --crit: oklch(0.67 0.22 25);
     --unknown: oklch(0.62 0.01 275);

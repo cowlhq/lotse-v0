@@ -643,6 +643,26 @@
       "host.service": "Service not running",
       "host.reboot": "Restart needed"
     },
+    "phrases": {
+      "host.silent": "is not reporting",
+      "host.disk": "disk almost full",
+      "host.cpu": "high CPU",
+      "host.memory": "memory almost full",
+      "host.swap": "swap almost full",
+      "host.load": "high load",
+      "host.iowait": "waiting on disks",
+      "container.unhealthy": "is unhealthy",
+      "container.restarting": "keeps restarting",
+      "check.down": "is failing",
+      "check.cert": "certificate expiring",
+      "check.heartbeat": "missed its heartbeat",
+      "probe.silent": "is offline",
+      "channel.failing": "cannot send",
+      "check.domain": "domain expiring",
+      "host.unit": "unit failed",
+      "host.service": "service not running",
+      "host.reboot": "needs a restart"
+    },
     "sinceAgo": "for {{time}}"
   },
   "channel": {

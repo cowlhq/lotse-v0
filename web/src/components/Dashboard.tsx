@@ -100,7 +100,7 @@ export function Dashboard({ scope }: { scope?: Scope }) {
       {!scope && <Headline problems={problems.length} crit={problems.filter((a) => a.state === "crit").length} hosts={myHosts.length} checks={myChecks.length} />}
       {problems.length > 0 && (
         <section className={panel}>
-          <Incidents alerts={problems} />
+          <Incidents alerts={problems} from={path} />
         </section>
       )}
       {!scope && isHubAdmin && <NotifyHint />}
@@ -228,7 +228,7 @@ function Tiles({ scopes, hosts, checks, alerts, byID, kind }: { scopes: Scope[];
               {c.length > 0 && <Strip days={strip} />}
               {problem && (
                 <p className="truncate text-mini font-medium" style={{ color: problem.state === "crit" ? "var(--crit)" : "var(--warn)" }}>
-                  {subjectName(problem).name} · {alertTitle(t, problem)}
+                  {subjectName(problem).name} {t(`alert.phrases.${problem.rule}`, { defaultValue: alertTitle(t, problem) })}
                 </p>
               )}
             </Link>
@@ -248,7 +248,7 @@ function Strip({ days }: { days: (number | null)[] }) {
         <span
           key={i}
           className="flex-1 rounded-[1.5px]"
-          style={{ background: v == null ? "var(--muted)" : v >= 0.999 ? "var(--ok)" : v >= 0.5 ? "var(--warn)" : "var(--crit)" }}
+          style={{ background: v == null ? "var(--muted)" : v >= 0.999 ? "var(--ok-soft)" : v >= 0.5 ? "var(--warn)" : "var(--crit)" }}
         />
       ))}
     </div>
@@ -367,7 +367,7 @@ function Inventory({ hosts, checks, host, check }: { hosts: HostSummary[]; check
           <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={t("rows.filter")} className="h-8 w-52 pl-8" />
         </div>
       </header>
-      <div className="border-t">
+      <div>
         {shown === 0 ? <p className="px-4 py-10 text-center text-muted-foreground">{t("rows.noMatch")}</p> : tab === "hosts" ? host(shownHosts) : check(shownChecks)}
       </div>
     </section>
