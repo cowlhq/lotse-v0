@@ -113,7 +113,7 @@ export function Container({ id }: { id: number }) {
       />
       <Page>
         {problems.length > 0 && (
-          <section className="overflow-hidden rounded-lg border bg-card">
+          <section className="overflow-hidden rounded-xl border bg-card">
             <Incidents alerts={problems} />
           </section>
         )}
@@ -131,7 +131,7 @@ export function Container({ id }: { id: number }) {
         <TabsContent value="overview">
           <div className="grid gap-4 lg:grid-cols-2">
             {charts.map((ch) => (
-              <Panel key={ch.title} title={t(ch.title)} right={<span className="text-foreground tabular-nums">{c.state === "running" ? ch.now(current) : "–"}</span>}>
+              <Panel key={ch.title} title={t(ch.title)} description={t(`${ch.title}Hint`, { defaultValue: "" })} right={<span className="text-foreground tabular-nums">{c.state === "running" ? ch.now(current) : "–"}</span>}>
                 <Chart data={series.data} lines={ch.lines} format={ch.format} range={range} events={events.data} binary={ch.binary} />
               </Panel>
             ))}

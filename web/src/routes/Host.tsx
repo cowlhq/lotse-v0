@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { Ban, FolderInput, MoreHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -19,6 +19,7 @@ import { StatusIcon } from "@/components/shell/Dot";
 import { Page } from "@/components/shell/PageHeader";
 import { PageTabs } from "@/components/shell/PageTabs";
 import { Facts, ObjectHeader, Panel } from "@/components/shell/Panel";
+import { ScopeTrail } from "@/components/shell/ScopeTrail";
 import { Bar } from "@/components/Tables";
 import { UpdateBadge } from "@/components/UpdateBadge";
 import { Button } from "@/components/ui/button";
@@ -66,7 +67,7 @@ export function Host({ id }: { id: number }) {
   return (
     <Tabs defaultValue="overview" className="gap-0">
       <ObjectHeader
-        above={<EnvironmentLink envID={h.environment_id ?? null} />}
+        above={<ScopeTrail envID={h.environment_id ?? null} />}
         icon={<StatusIcon level={level} size={22} />}
         title={h.name}
         actions={
@@ -105,7 +106,7 @@ export function Host({ id }: { id: number }) {
       <Page>
         <AgentUpdate host={h} status={update} />
         {problems.length > 0 && (
-          <section className="overflow-hidden rounded-lg border bg-card">
+          <section className="overflow-hidden rounded-xl border bg-card">
             <Incidents alerts={problems} />
           </section>
         )}
@@ -129,7 +130,7 @@ export function Host({ id }: { id: number }) {
           )}
           <div className="grid gap-4 lg:grid-cols-2">
             {charts.map((c) => (
-              <Panel key={c.title} title={t(c.title)} right={<span className="text-foreground tabular-nums">{c.now(current)}</span>}>
+              <Panel key={c.title} title={t(c.title)} description={t(`${c.title}Hint`)} right={<span className="text-foreground tabular-nums">{c.now(current)}</span>}>
                 <Chart data={series.data} lines={c.lines} format={c.format} range={range} events={events.data} max={c.max} binary={c.binary} />
               </Panel>
             ))}
@@ -159,18 +160,6 @@ export function Host({ id }: { id: number }) {
 }
 
 // EnvironmentLink names where a host is, leading there.
-function EnvironmentLink({ envID }: { envID: number | null }) {
-  const { t } = useTranslation();
-  const scopes = useQuery({ queryKey: ["scopes"], queryFn: listScopes });
-  const env = (scopes.data ?? []).find((s) => s.id === envID);
-  if (!env) return <span>{t("overview.unassigned")}</span>;
-  return (
-    <Link to="/scopes/$id" params={{ id: String(env.id) }} className="font-mono text-mini hover:text-foreground hover:underline">
-      {env.path}
-    </Link>
-  );
-}
-
 // HostMenu holds what is seldom done to a host: moving it to another
 // environment, and cutting its agent off.
 function HostMenu({ host }: { host: HostData }) {

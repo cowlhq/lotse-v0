@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Bell, Check, ChevronsUpDown, LogOut, Monitor, Moon, Search, Settings, Sun, UserRound } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useState } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { listScopes, logout, type Scope } from "@/api";
 import { Account } from "@/components/Account";
@@ -124,16 +124,35 @@ function ScopeSwitcher() {
   );
 }
 
-// The scope one looks at is the one whose page is open, and stays so on
-// the pages of what is in it, until one goes home.
+// The scope one looks at is the one whose page is open, or the one a page
+// of what is in it names (useShowScope), and stays so until one goes home.
 function useCurrentScope(): number | null {
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const { hint } = useContext(ScopeHint);
   const [last, setLast] = useState<number | null>(null);
   const m = path.match(/^\/scopes\/(\d+)/);
   const home = path === "/" || path === "/alerts" || path.startsWith("/settings");
-  const current = m ? Number(m[1]) : home ? null : last;
+  const current = m ? Number(m[1]) : hint ?? (home ? null : last);
   if (current !== last) setLast(current);
   return current;
+}
+
+const ScopeHint = createContext<{ hint: number | null; setHint: (id: number | null) => void }>({ hint: null, setHint: () => {} });
+
+// ScopeHintProvider lets a page tell the bar whose it is.
+export function ScopeHintProvider({ children }: { children: ReactNode }) {
+  const [hint, setHint] = useState<number | null>(null);
+  return <ScopeHint.Provider value={{ hint, setHint }}>{children}</ScopeHint.Provider>;
+}
+
+// useShowScope tells the bar that the page open is of what is in a scope,
+// such as a host in its environment.
+export function useShowScope(id: number | null | undefined) {
+  const { setHint } = useContext(ScopeHint);
+  useEffect(() => {
+    setHint(id ?? null);
+    return () => setHint(null);
+  }, [id, setHint]);
 }
 
 function rootOf(s: Scope, byID: Map<number, Scope>, ids: Set<number>): Scope {

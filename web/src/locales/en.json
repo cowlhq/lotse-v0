@@ -105,7 +105,7 @@
   "ago": "{{time}} ago",
   "metric": {
     "cpu": "CPU",
-    "cpuCore": "CPU (100 % = one core)",
+    "cpuCore": "CPU",
     "busy": "busy",
     "iowait": "I/O wait",
     "steal": "steal",
@@ -122,7 +122,13 @@
     "sent": "sent",
     "diskio": "Disk I/O",
     "read": "read",
-    "written": "written"
+    "written": "written",
+    "cpuHint": "Busy, waiting for disks, and taken by the hypervisor",
+    "cpuCoreHint": "100 % is one core",
+    "memoryHint": "In use",
+    "loadHint": "Processes ready to run, over 1, 5 and 15 minutes",
+    "networkHint": "Received and sent",
+    "diskioHint": "Read from and written to the disks"
   },
   "host": {
     "notFound": "There is no such host.",

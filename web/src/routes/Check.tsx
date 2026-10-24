@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { Check as CheckIcon, Copy, MoreHorizontal, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { deleteCheck, getCheck, getSeries, listEvents, listScopes, NotFound, type CheckDetail } from "@/api";
+import { deleteCheck, getCheck, getSeries, listEvents, NotFound, type CheckDetail } from "@/api";
 import { AlertBell } from "@/components/AlertBell";
 import { AlertHistory, useAlerts } from "@/components/Alerts";
 import { Chart, type Line } from "@/components/Chart";
@@ -19,6 +19,7 @@ import { StatusIcon } from "@/components/shell/Dot";
 import { Page } from "@/components/shell/PageHeader";
 import { PageTabs } from "@/components/shell/PageTabs";
 import { Facts, ObjectHeader, Panel } from "@/components/shell/Panel";
+import { ScopeTrail } from "@/components/shell/ScopeTrail";
 import { UptimeBar } from "@/components/UptimeBar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -47,7 +48,6 @@ export function Check({ id }: { id: number }) {
     placeholderData: (prev) => prev,
     refetchInterval: 30_000,
   });
-  const scopes = useQuery({ queryKey: ["scopes"], queryFn: listScopes });
   const alertsQuery = useAlerts();
   const lines: Line[] = useMemo(() => [{ key: "latency_ms", label: t("check.latency") }], [t]);
   const format = useMemo(() => (v: number | null, d?: number) => (v == null ? "–" : `${number(v, d ?? 0)} ms`), []);
@@ -56,7 +56,6 @@ export function Check({ id }: { id: number }) {
   if (check.error instanceof NotFound) return <p className="p-6">{t("check.notFound")}</p>;
   if (check.isError) return <p className="p-6 text-destructive">{t("app.unreachable")}</p>;
   const c = check.data;
-  const env = scopes.data?.find((s) => s.id === c.environment_id);
   // The share of runs that passed, over the range shown.
   const ok = series.data?.columns.ok?.filter((v): v is number => v != null) ?? [];
   const uptime = ok.length ? (100 * ok.reduce((a, b) => a + b, 0)) / ok.length : undefined;
@@ -70,13 +69,7 @@ export function Check({ id }: { id: number }) {
   return (
     <Tabs defaultValue="overview" className="gap-0">
       <ObjectHeader
-        above={
-          env && (
-            <Link to="/scopes/$id" params={{ id: String(env.id) }} className="font-mono text-mini hover:text-foreground hover:underline">
-              {env.path}
-            </Link>
-          )
-        }
+        above={<ScopeTrail envID={c.environment_id} />}
         icon={<StatusIcon level={level} size={22} />}
         title={c.name}
         actions={
@@ -105,7 +98,7 @@ export function Check({ id }: { id: number }) {
           </p>
         )}
         {alerts.length > 0 && (
-          <section className="overflow-hidden rounded-lg border bg-card">
+          <section className="overflow-hidden rounded-xl border bg-card">
             <Incidents alerts={alerts} />
           </section>
         )}
@@ -165,7 +158,7 @@ export function Check({ id }: { id: number }) {
 // Stat is one figure, large, with what it is.
 function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
-    <div className="rounded-lg border bg-card px-4 py-3">
+    <div className="rounded-xl border bg-card px-4 py-3">
       <p className="text-mini text-muted-foreground">{label}</p>
       <p className="text-2xl font-semibold tracking-tight tabular-nums" style={tone ? { color: tone } : undefined}>
         {value}

@@ -1,18 +1,25 @@
 import type { ReactNode } from "react";
 
-// Panel is a framed part of a page, as the home page's tables are: a title,
-// what it says on the right, and its content.
-export function Panel({ title, count, right, children, flush = false }: { title?: ReactNode; count?: number; right?: ReactNode; children: ReactNode; flush?: boolean }) {
+// Panel is a framed part of a page: a title, a line on what it shows, what
+// it says on the right, and its content. A list (flush) is set off from the
+// title by a line; anything else needs none.
+export function Panel({ title, description, count, right, children, flush = false }: { title?: ReactNode; description?: ReactNode; count?: number; right?: ReactNode; children: ReactNode; flush?: boolean }) {
+  const head = title || right;
   return (
-    <section className="overflow-hidden rounded-lg border bg-card">
-      {(title || right) && (
-        <header className="flex min-h-12 items-center gap-2 border-b px-4 py-2">
-          {title && <h2 className="font-semibold">{title}</h2>}
-          {count != null && <span className="text-muted-foreground tabular-nums">{count}</span>}
+    <section className="overflow-hidden rounded-xl border bg-card">
+      {head && (
+        <header className={`flex min-h-12 items-center gap-2 px-4 py-3 ${flush ? "border-b" : ""}`}>
+          <div className="min-w-0">
+            <div className="flex items-baseline gap-2">
+              {title && <h2 className="font-semibold">{title}</h2>}
+              {count != null && <span className="text-muted-foreground tabular-nums">{count}</span>}
+            </div>
+            {description && <p className="text-mini text-muted-foreground">{description}</p>}
+          </div>
           {right && <div className="ml-auto flex items-center gap-2 text-muted-foreground">{right}</div>}
         </header>
       )}
-      <div className={flush ? "" : "p-4"}>{children}</div>
+      <div className={flush ? "" : head ? "px-4 pb-4" : "p-4"}>{children}</div>
     </section>
   );
 }
