@@ -211,8 +211,9 @@
   font-size: 12px;
   color: var(--muted-foreground);
 }
-.u-legend th {
-  font-weight: 500;
+.u-legend th,
+.u-legend .u-label {
+  font-weight: 400 !important;
 }
 /* A short line in the series' color instead of uPlot's box. */
 .u-legend .u-marker {

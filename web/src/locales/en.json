@@ -158,7 +158,11 @@
     "rebootRequired": "restart needed",
     "ignored": "ignored",
     "servicesActive": "{{active}} active",
-    "servicesFailed": "{{active}} active, {{failed}} failed"
+    "servicesFailed": "{{active}} active, {{failed}} failed",
+    "machine": "Machine",
+    "system": "System",
+    "cpu": "CPU",
+    "memoryTotal": "Memory"
   },
   "container": {
     "notFound": "There is no such container.",

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Ban, FolderInput, MoreHorizontal } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { getConfig, getHost, getSeries, listEvents, listScopes, NotFound, revokeAgent, setHostEnvironment, updateHost, type Container, type Host as HostData, type HostDetail, type Series, type SystemUnit } from "@/api";
@@ -82,11 +82,9 @@ export function Host({ id }: { id: number }) {
             items={[
               h.waiting ? t("status.waiting") : h.online ? t("status.online") : h.agent_revoked ? t("status.revoked") : t("rows.offlineSince", { time: ago(h.last_seen) }),
               h.platform || h.os,
-              h.cpu_model ? `${h.cores} × ${h.cpu_model}` : t("host.cores", { count: h.cores }),
+              t("host.cores", { count: h.cores }),
               bytes(h.mem_total),
               d.latest?.uptime != null && t("host.upFor", { time: duration(d.latest.uptime) }),
-              `${t("host.agent")} ${h.agent_version}`,
-              h.docker_version && `Docker ${h.docker_version}`,
               d.system?.reboot_required && (
                 <span style={{ color: "var(--warn)" }} title={d.system.reboot_reason}>
                   {t("host.rebootRequired")}
@@ -131,7 +129,7 @@ export function Host({ id }: { id: number }) {
           <div className="grid gap-4 lg:grid-cols-2">
             {charts.map((c) => (
               <Panel key={c.title} title={t(c.title)} description={t(`${c.title}Hint`)} right={<span className="text-foreground tabular-nums">{c.now(current)}</span>}>
-                <Chart data={series.data} lines={c.lines} format={c.format} range={range} events={events.data} max={c.max} binary={c.binary} />
+                <Chart data={series.data} lines={c.lines} format={c.format} range={range} events={events.data} max={c.max} binary={c.binary} height={130} />
               </Panel>
             ))}
           </div>
@@ -148,6 +146,25 @@ export function Host({ id }: { id: number }) {
           <Maintenance subject={subject} />
         </TabsContent>
         <TabsContent value="settings" className="space-y-6">
+          <Panel title={t("host.machine")}>
+            {/* What the header leaves out, to keep to one line. */}
+            <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1.5">
+              {[
+                [t("host.system"), h.platform || h.os],
+                [t("host.cpu"), h.cpu_model ? `${h.cores} × ${h.cpu_model}` : t("host.cores", { count: h.cores })],
+                [t("host.memoryTotal"), bytes(h.mem_total)],
+                [t("host.agent"), h.agent_version],
+                ["Docker", h.docker_version],
+              ]
+                .filter(([, v]) => v)
+                .map(([k, v]) => (
+                  <Fragment key={k}>
+                    <dt className="text-muted-foreground">{k}</dt>
+                    <dd>{v}</dd>
+                  </Fragment>
+                ))}
+            </dl>
+          </Panel>
           <Config subject={subject} envID={h.environment_id ?? undefined} />
         </TabsContent>
         <TabsContent value="activity" className="space-y-6">

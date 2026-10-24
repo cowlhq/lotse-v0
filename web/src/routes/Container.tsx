@@ -132,7 +132,7 @@ export function Container({ id }: { id: number }) {
           <div className="grid gap-4 lg:grid-cols-2">
             {charts.map((ch) => (
               <Panel key={ch.title} title={t(ch.title)} description={t(`${ch.title}Hint`, { defaultValue: "" })} right={<span className="text-foreground tabular-nums">{c.state === "running" ? ch.now(current) : "–"}</span>}>
-                <Chart data={series.data} lines={ch.lines} format={ch.format} range={range} events={events.data} binary={ch.binary} />
+                <Chart data={series.data} lines={ch.lines} format={ch.format} range={range} events={events.data} binary={ch.binary} height={130} />
               </Panel>
             ))}
           </div>
