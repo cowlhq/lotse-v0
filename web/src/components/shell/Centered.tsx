@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Wordmark } from "@/components/shell/Sidebar";
+import { Wordmark } from "@/components/shell/TopBar";
 
 // Centered is the frame of what comes before the app: logging in and
 // setting up. The logo, a title, and one panel in the middle.
