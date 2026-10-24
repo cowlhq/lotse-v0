@@ -669,7 +669,8 @@
       "host.service": "service not running",
       "host.reboot": "needs a restart"
     },
-    "sinceAgo": "for {{time}}"
+    "sinceAgo": "for {{time}}",
+    "resolved": "resolved"
   },
   "channel": {
     "title": "Channels",

@@ -6,7 +6,6 @@ import { listAlertHistory, listAlerts, type Alert, type AlertState } from "@/api
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { dateTime, shortDateTime } from "@/lib/format";
 import { alertTitle, subjectName } from "@/lib/alerts";
-import { levelColor } from "@/lib/status";
 import { StatusIcon } from "@/components/shell/Dot";
 import { Panel } from "@/components/shell/Panel";
 import { useLive } from "@/lib/live";
@@ -99,20 +98,18 @@ function Transition({ alert: a, showSubject }: { alert: Alert; showSubject: bool
   const { name } = subjectName(a);
   return (
     <li>
-      <Link to="/alerts/$id" params={{ id: String(a.id) }} className="flex items-start gap-3 border-b px-4 py-3 transition-colors last:border-b-0 hover:bg-accent/60 sm:items-center">
-        <span className="mt-0.5 sm:mt-0">
+      <Link to="/alerts/$id" params={{ id: String(a.id) }} className="flex items-start gap-3 px-4 py-2.5 transition-colors hover:bg-accent/60 sm:items-center">
+        <span className="mt-0.5 sm:mt-0" title={t(`alert.state.${a.to}`)}>
           <StatusIcon level={a.to === "ok" ? "ok" : a.to} />
         </span>
-        <span className="hidden w-16 shrink-0 font-medium sm:inline" style={{ color: a.to === "ok" ? "var(--ok)" : a.to === "unknown" ? undefined : levelColor[a.to] }}>
-          {t(`alert.state.${a.to}`)}
-        </span>
         <span className="min-w-0 flex-1 sm:truncate">
-          <span className="font-medium">{alertTitle(t, a)}</span>
-          {showSubject && <span> {name}</span>}
-          {a.instance && <code className="ml-1.5 rounded bg-muted px-1 py-px font-mono text-mini">{a.instance}</code>}
-          <span className="block text-muted-foreground sm:inline">
+          {showSubject && <span className="font-medium">{name} </span>}
+          {a.instance && <code className="mr-1.5 rounded bg-muted px-1 py-px font-mono text-mini">{a.instance}</code>}
+          <span>{showSubject ? t(`alert.phrases.${a.rule}`, { defaultValue: alertTitle(t, a) }) : alertTitle(t, a)}</span>
+          {a.to === "ok" && <span className="ml-2 text-mini" style={{ color: "var(--ok)" }}>{t("alert.resolved")}</span>}
+          <span className="block text-mini text-muted-foreground sm:ml-2 sm:inline">
             {/* The reason says the value in words; without one, the value. */}
-            {a.reason ? <span className="sm:before:content-['_·_']">{a.reason}</span> : a.value != null && a.unit && <span className="sm:before:content-['_·_']">{value(a.value, a.unit)}</span>}
+            {a.reason ? a.reason : a.value != null && a.unit && value(a.value, a.unit)}
             {a.in_maintenance && <> · {t("alert.maintenance")}</>}
           </span>
         </span>
