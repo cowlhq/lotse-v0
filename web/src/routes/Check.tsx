@@ -87,6 +87,15 @@ export function Check({ id }: { id: number }) {
               </span>,
               t(`check.kind.${c.type}`),
               <span className="font-mono text-mini">{target(c)}</span>,
+              c.type !== "heartbeat" && uptime != null && t("check.uptimeFact", { value: percent(uptime, uptime < 99.995 && uptime > 0.005 ? 2 : 0) }),
+              c.latency_ms != null && `${Math.round(c.latency_ms)} ms`,
+              // A domain check keeps its registration's end where others
+              // keep a certificate's.
+              days != null && (
+                <span style={days < (c.type === "domain" ? 30 : 14) ? { color: "var(--warn)" } : undefined}>
+                  {t(c.type === "domain" ? "check.domainIn" : "check.certIn", { count: days })}
+                </span>
+              ),
             ]}
           />
         }
@@ -118,20 +127,12 @@ export function Check({ id }: { id: number }) {
             <Heartbeat check={c} />
           ) : (
             <>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <Stat label={t("check.uptime")} value={percent(uptime, uptime != null && uptime < 99.995 && uptime > 0.005 ? 2 : 0)} />
-                <Stat label={t("check.latency")} value={c.latency_ms != null ? `${Math.round(c.latency_ms)} ms` : "–"} />
-                {/* A domain check keeps its registration's end where others keep
-                    a certificate's. */}
-                <Stat
-                  label={c.type === "domain" ? t("check.domainExpires") : t("check.cert")}
-                  value={days != null ? t("check.days", { count: days }) : "–"}
-                  tone={days != null && days < (c.type === "domain" ? 30 : 14) ? "var(--warn)" : undefined}
-                />
+              <div className="flex items-center gap-4">
+                <span className="shrink-0 text-mini text-muted-foreground">{t("table.last24h")}</span>
+                <div className="min-w-0 flex-1">
+                  <UptimeBar checkID={id} slices={96} />
+                </div>
               </div>
-              <Panel title={t("table.last24h")}>
-                <UptimeBar checkID={id} slices={96} />
-              </Panel>
               <Panel title={t("check.latency")}>
                 <Chart data={series.data} lines={lines} format={format} range={range} events={events.data} />
               </Panel>
@@ -152,18 +153,6 @@ export function Check({ id }: { id: number }) {
         </TabsContent>
       </Page>
     </Tabs>
-  );
-}
-
-// Stat is one figure, large, with what it is.
-function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
-  return (
-    <div className="rounded-xl border bg-card px-4 py-3">
-      <p className="text-mini text-muted-foreground">{label}</p>
-      <p className="text-2xl font-semibold tracking-tight tabular-nums" style={tone ? { color: tone } : undefined}>
-        {value}
-      </p>
-    </div>
   );
 }
 

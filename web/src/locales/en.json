@@ -63,11 +63,8 @@
     "empty": "Nothing here yet"
   },
   "stats": {
-    "uptime": "Uptime, 30 days",
-    "response": "Response, median",
-    "cert": "Next certificate expires",
-    "inDays_one": "in {{count}} day",
-    "inDays_other": "in {{count}} days"
+    "uptimeFact": "{{value}} uptime in 30 days",
+    "medianFact": "median {{value}} ms"
   },
   "begin": {
     "question": "What do you want to watch first?",
@@ -546,7 +543,12 @@
     "tryCert_other": "certificate valid for {{count}} more days",
     "tryHint": "As the hub sees it now; it can be added like this all the same.",
     "heartbeatName": "Job, {{period}}",
-    "tryFast": "under 1 ms"
+    "tryFast": "under 1 ms",
+    "uptimeFact": "{{value}} uptime",
+    "certIn_one": "certificate in {{count}} day",
+    "certIn_other": "certificate in {{count}} days",
+    "domainIn_one": "domain expires in {{count}} day",
+    "domainIn_other": "domain expires in {{count}} days"
   },
   "probe": {
     "title": "Probes",

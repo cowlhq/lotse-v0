@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { deleteScope, exportURL, getScope, listChecks, listHosts, listScopes, NotFound, renameScope, updateScope, type HostSummary } from "@/api";
 import { AlertHistory, useAlerts } from "@/components/Alerts";
-import { Dashboard } from "@/components/Dashboard";
+import { Dashboard, useCheckStats } from "@/components/Dashboard";
 import { StatusIcon } from "@/components/shell/Dot";
 import { Page } from "@/components/shell/PageHeader";
 import { Facts, ObjectHeader } from "@/components/shell/Panel";
@@ -37,6 +37,18 @@ export function Scope({ id }: { id: number }) {
   const hosts = useQuery({ queryKey: ["hosts"], queryFn: listHosts });
   const checks = useQuery({ queryKey: ["checks", "all"], queryFn: () => listChecks() });
   const alerts = useAlerts().data ?? [];
+  // The checks in this scope, for the numbers in its line of facts; worked
+  // out before the page knows whether the scope exists, as hooks must be.
+  const scopePath = scope.data?.path;
+  const envPath = new Map((scopes.data ?? []).map((s) => [s.id, s.path]));
+  const stats = useCheckStats(
+    scopePath === undefined
+      ? []
+      : (checks.data ?? []).filter((c) => {
+          const p = envPath.get(c.environment_id);
+          return p !== undefined && (p === scopePath || p.startsWith(scopePath + "/"));
+        }),
+  );
 
   if (scope.isPending) return <Skeleton className="m-6 h-32" />;
   if (scope.error instanceof NotFound) return <p className="p-6">{t("tree.notFound")}</p>;
@@ -97,6 +109,9 @@ export function Scope({ id }: { id: number }) {
               t("overview.hostCount", { count: mine.length }),
               t("overview.checkCount", { count: myChecks.length }),
               !env && children.length > 0 && t(`tree.childCount.${scope.data.kind}`, { count: children.length }),
+              stats.uptime && t("stats.uptimeFact", { value: stats.uptime }),
+              stats.median != null && t("stats.medianFact", { value: Math.round(stats.median) }),
+              stats.cert != null && <span style={stats.cert < 14 ? { color: "var(--warn)" } : undefined}>{t("check.certIn", { count: stats.cert })}</span>,
             ]}
           />
         }

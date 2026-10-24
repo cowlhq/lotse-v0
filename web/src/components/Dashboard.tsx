@@ -105,7 +105,6 @@ export function Dashboard({ scope }: { scope?: Scope }) {
       )}
       {!scope && isHubAdmin && <NotifyHint />}
       {tiles.length > 1 && <Tiles scopes={tiles} hosts={myHosts} checks={myChecks} alerts={alerts} byID={byID} kind={tiles[0].kind} />}
-      {scope && myChecks.length > 0 && <Stats checks={myChecks} />}
       {myHosts.length + myChecks.length > 0 ? (
         <Inventory
           hosts={myHosts}
@@ -295,32 +294,17 @@ function percent(v: number) {
   return `${v >= 99.995 ? "100" : v.toFixed(2)}%`;
 }
 
-// Stats are a customer's, project's or environment's checks in three
-// numbers.
-function Stats({ checks }: { checks: Check[] }) {
-  const { t } = useTranslation();
+// useCheckStats are a customer's, project's or environment's checks in
+// three numbers: uptime over 30 days, the median response, and the days
+// until the next certificate expires.
+export function useCheckStats(checks: Check[]) {
   const days = useDailyUptime(checks);
   const ran = combine(checks.map((c) => days[c.id])).filter((v): v is number => v != null);
   const uptime = ran.length ? (100 * ran.reduce((a, b) => a + b, 0)) / ran.length : null;
   const lat = checks.map((c) => c.latency_ms).filter((v): v is number => v != null).sort((a, b) => a - b);
   const median = lat.length ? lat[Math.floor(lat.length / 2)] : null;
   const certs = checks.map((c) => certDays(c)).filter((v): v is number => v != null);
-  const cert = certs.length ? Math.min(...certs) : null;
-  const stat = (label: string, value: ReactNode, warn = false) => (
-    <div className="rounded-xl border bg-card px-4 py-3">
-      <p className="text-mini text-muted-foreground">{label}</p>
-      <p className="text-xl font-semibold tracking-tight tabular-nums" style={warn ? { color: "var(--warn)" } : undefined}>
-        {value}
-      </p>
-    </div>
-  );
-  return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-      {stat(t("stats.uptime"), uptime != null ? percent(uptime) : "–")}
-      {stat(t("stats.response"), median != null ? `${Math.round(median)} ms` : "–")}
-      {stat(t("stats.cert"), cert != null ? t("stats.inDays", { count: cert }) : "–", cert != null && cert < 14)}
-    </div>
-  );
+  return { uptime: uptime != null ? percent(uptime) : null, median, cert: certs.length ? Math.min(...certs) : null };
 }
 
 // Inventory is the hosts and the checks in one panel, a switch between
