@@ -16,7 +16,7 @@ import { useMe } from "@/lib/useMe";
 
 // Home is everything at once: whether all is well, what needs attention,
 // every host with its load, every check with its last day. A customer's or
-// an environment's own page, from the sidebar, shows just theirs.
+// an environment's own page, chosen in the bar, shows just theirs.
 export function Overview() {
   const { t } = useTranslation();
   const { isHubAdmin } = useMe();

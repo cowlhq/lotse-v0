@@ -9,7 +9,7 @@ import { CheckForm } from "@/components/AddCheck";
 import { Channels } from "@/components/Channels";
 import { MailServer } from "@/components/MailServer";
 import { EnvironmentForm } from "@/components/NewEnvironment";
-import { Wordmark } from "@/components/shell/Sidebar";
+import { Wordmark } from "@/components/shell/TopBar";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { useMe } from "@/lib/useMe";
