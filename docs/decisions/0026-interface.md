@@ -32,11 +32,13 @@ look of its own.
   lies on it in white, with a fine border and rounded corners. No frames
   inside frames.
 - **lotse's own look.** Fira Sans and Fira Mono, the logo, indigo for the
-  main action, light by default and following the system. Status colors
-  mean only state, each with a shape. Nothing is taken from Beszel: no
-  code, icons, texts or colors.
+  main action, light by default and following the system. Status is a
+  colored dot, without a shape of its own: shapes drew the eye away from
+  names and numbers. Its word is in its title, and wherever it matters it
+  stands beside it in text. Status colors mean only state. Nothing is taken
+  from Beszel: no code, icons, texts or colors.
 - What 0018 said about object pages, the bell, words instead of keys, and
-  type and color still holds.
+  type still holds; its shapes for status do not.
 
 ## Consequences
 
