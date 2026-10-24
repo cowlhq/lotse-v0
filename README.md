@@ -25,8 +25,8 @@ one, an unhealthy one and one that crashes every two minutes. Then:
 
 1. Open the setup link from `docker compose logs hub`, choose SQLite, and
    create the admin.
-2. "Get started" on the home page leads through the rest: an environment
-   (customer, project, environment), then "Add host", which shows, under
+2. The guide that follows leads through the rest: an environment
+   (customer, project, environment), then a machine, which shows, under
    "This compose stack", the line that starts the agent of `compose.yml` on
    this machine: `LOTSE_TOKEN=lotse_enr_… docker compose --profile agent up -d`.
    The demo web container brings a check of its own, from its labels.
