@@ -3,14 +3,12 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Download, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { deleteScope, exportURL, getScope, listChecks, listHosts, listScopes, NotFound, renameScope, setHostEnvironment, updateScope, type HostSummary } from "@/api";
-import { toast } from "sonner";
+import { deleteScope, exportURL, getScope, listChecks, listHosts, listScopes, NotFound, renameScope, updateScope, type HostSummary } from "@/api";
 import { AlertHistory, useAlerts } from "@/components/Alerts";
-import { Incidents } from "@/components/Incidents";
-import { CheckTable, HostTable } from "@/components/Tables";
+import { Dashboard } from "@/components/Dashboard";
 import { StatusIcon } from "@/components/shell/Dot";
-import { Empty, Page } from "@/components/shell/PageHeader";
-import { Facts, ObjectHeader, Panel } from "@/components/shell/Panel";
+import { Page } from "@/components/shell/PageHeader";
+import { Facts, ObjectHeader } from "@/components/shell/Panel";
 import { PageTabs } from "@/components/shell/PageTabs";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { levelUnder, isFiring } from "@/lib/status";
@@ -28,28 +26,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/useMe";
 import { useUpdates } from "@/lib/useUpdates";
 
-// useMoveHost moves a host to another environment, with a toast that can
-// take it back.
-function useMoveHost() {
-  const { t } = useTranslation();
-  const client = useQueryClient();
-  const move = useMutation({
-    mutationFn: ({ h, envID }: { h: HostSummary; envID: number | null; to: string; undo?: boolean }) => setHostEnvironment(h.host.id, envID),
-    onSuccess: (_, { h, to, undo }) => {
-      client.invalidateQueries({ queryKey: ["hosts"] });
-      client.invalidateQueries({ queryKey: ["host", h.host.id] });
-      client.invalidateQueries({ queryKey: ["changes"] });
-      if (undo) return;
-      const from = h.host.environment_id ?? null;
-      toast.success(t("move.moved", { name: h.host.name, to }), {
-        action: { label: t("move.undo"), onClick: () => move.mutate({ h, envID: from, to: "", undo: true }) },
-      });
-    },
-    onError: (e) => toast.error(e.message),
-  });
-  return (h: HostSummary, envID: number, to: string) => move.mutate({ h, envID, to });
-}
-
 // Scope is the page of a customer, project or environment: how it stands
 // and what is in it first; its alerts, notifications, maintenance, settings
 // and history in tabs.
@@ -61,7 +37,6 @@ export function Scope({ id }: { id: number }) {
   const hosts = useQuery({ queryKey: ["hosts"], queryFn: listHosts });
   const checks = useQuery({ queryKey: ["checks", "all"], queryFn: () => listChecks() });
   const alerts = useAlerts().data ?? [];
-  const moveHost = useMoveHost();
 
   if (scope.isPending) return <Skeleton className="m-6 h-32" />;
   if (scope.error instanceof NotFound) return <p className="p-6">{t("tree.notFound")}</p>;
@@ -81,32 +56,7 @@ export function Scope({ id }: { id: number }) {
   };
   const children = all.filter((s) => s.parent_id === id);
   const myChecks = (checks.data ?? []).filter((c) => below(c.environment_id));
-  // Below an environment, rows are grouped by the environment they are in,
-  // named from here: Shop / Prod on ACME's page.
-  const groupOf = (envID: number | null | undefined) => {
-    const e = envID ? byID.get(envID) : undefined;
-    const names: string[] = [];
-    for (let x = e; x && x.id !== id; x = x.parent_id ? byID.get(x.parent_id) : undefined) names.unshift(x.name);
-    return {
-      key: e?.path ?? "",
-      name: names.join(" / "),
-      label: e ? (
-        <Link to="/scopes/$id" params={{ id: String(e.id) }} className="hover:underline" onClick={(ev) => ev.stopPropagation()}>
-          {names.join(" / ")}
-        </Link>
-      ) : (
-        ""
-      ),
-    };
-  };
   const mine = (hosts.data ?? []).filter((h) => below(h.host.environment_id));
-  // Where a check is, below this scope: nothing for one of the environment's
-  // own, the host and container for one a container's labels made, whose
-  // key goes on through them (web-01/shop-app/web).
-  const within = (path: string) => {
-    const parts = path.slice(scope.data.path.length + 1).split("/");
-    return env ? parts.slice(0, -1).join("/") : "";
-  };
   const subject = `${scope.data.kind}:${id}`;
   const env = scope.data.kind === "environment";
   const problems = alerts.filter((a) => isFiring(a) && (a.subject_path === scope.data.path || a.subject_path.startsWith(scope.data.path + "/")));
@@ -162,38 +112,7 @@ export function Scope({ id }: { id: number }) {
           ]}
         />
       <TabsContent value="overview" className="space-y-6">
-          {problems.length > 0 && (
-            <section className="overflow-hidden rounded-lg border bg-card">
-              <Incidents alerts={problems} />
-            </section>
-          )}
-          <Panel title={t("nav.hosts")} count={mine.length} flush>
-            {mine.length === 0 ? (
-              <Empty>{env ? t("overview.noHostsAdd") : t("overview.noHostsYet")}</Empty>
-            ) : (
-              <HostTable
-                hosts={mine}
-                alerts={alerts}
-                where={(h) => h.host.platform || h.host.os}
-                group={env ? undefined : (h) => groupOf(h.host.environment_id)}
-                move={
-                  isAdmin && !env
-                    ? {
-                        groups: all.filter((s) => s.kind === "environment" && below(s.id)).map((s) => ({ ...groupOf(s.id), envID: s.id })),
-                        onMove: (h, envID) => moveHost(h, envID, groupOf(envID).name),
-                      }
-                    : undefined
-                }
-              />
-            )}
-          </Panel>
-          <Panel title={t("nav.checks")} count={myChecks.length} flush>
-            {myChecks.length === 0 ? (
-              <Empty>{env ? t("check.none") : t("overview.noChecksYet")}</Empty>
-            ) : (
-              <CheckTable checks={myChecks} where={(c) => within(c.path)} group={env ? undefined : (c) => groupOf(c.environment_id)} />
-            )}
-          </Panel>
+          <Dashboard scope={scope.data} />
           {isAdmin && <UpdateAgents scopeID={id} hosts={mine} />}
       </TabsContent>
       <TabsContent value="alerts">

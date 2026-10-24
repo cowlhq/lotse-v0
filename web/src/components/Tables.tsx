@@ -31,9 +31,9 @@ export type MoveTo = { groups: { key: string; label: ReactNode; envID: number }[
 
 type DropProps = { over: boolean; handlers: Pick<React.HTMLAttributes<HTMLElement>, "onDragOver" | "onDragLeave" | "onDrop"> };
 
-// The two tables of the home page, as Beszel has one: every host with its
-// load as bars, and every check with its last day. A row leads to the
-// host or check; the bell at its end sets its alerts.
+// The two tables of home: every host with its load as bars, and every
+// check with its last day, a line each. A row leads to the host or check;
+// the bell at its end sets its alerts.
 
 type Sort<K extends string> = { key: K; desc: boolean };
 
@@ -51,7 +51,11 @@ function Head<K extends string>({ k, sort, setSort, children, className = "" }: 
 
 const rank = { crit: 0, warn: 1, unknown: 2, ok: 3 };
 
-// Bar is a share as Beszel shows it: the number, and a bar that turns amber
+// The bell of a row shows when the row is pointed at, or has the focus;
+// on a phone, where nothing is pointed at, always.
+const bell = "sm:opacity-0 sm:transition-opacity sm:group-hover/row:opacity-100 sm:focus-within:opacity-100";
+
+// Bar is a share: the number, and a bar that turns amber
 // and red as it fills.
 export function Bar({ pct }: { pct: number | null | undefined }) {
   if (pct == null) return <span className="text-muted-foreground">–</span>;
@@ -68,7 +72,7 @@ export function Bar({ pct }: { pct: number | null | undefined }) {
 
 type HostKey = "name" | "cpu" | "mem" | "disk" | "net" | "containers";
 
-export function HostTable({ hosts, alerts, where, group, move }: { hosts: HostSummary[]; alerts: AlertState[]; where: (h: HostSummary) => string; group?: Grouping<HostSummary>; move?: MoveTo }) {
+export function HostTable({ hosts, alerts, where, group, move }: { hosts: HostSummary[]; alerts: AlertState[]; where?: (h: HostSummary) => string; group?: Grouping<HostSummary>; move?: MoveTo }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [sort, setSort] = useState<Sort<HostKey>>({ key: "name", desc: false });
@@ -122,6 +126,7 @@ export function HostTable({ hosts, alerts, where, group, move }: { hosts: HostSu
         <thead className="border-b">
           <tr>
             <Head k="name" {...p}>{t("table.host")}</Head>
+            {where && <th className="hidden h-10 px-3 font-medium whitespace-nowrap text-muted-foreground xl:table-cell">{t("table.customer")}</th>}
             <Head k="cpu" {...p} className="w-[13%]">{t("metric.cpu")}</Head>
             <Head k="mem" {...p} className="hidden w-[13%] sm:table-cell">{t("metric.memory")}</Head>
             <Head k="disk" {...p} className="hidden w-[13%] sm:table-cell">{t("metric.disk")}</Head>
@@ -134,7 +139,7 @@ export function HostTable({ hosts, alerts, where, group, move }: { hosts: HostSu
           {sorted.map((h, i) => {
             const go = () => navigate({ to: "/hosts/$id", params: { id: String(h.host.id) } });
             const g = group?.(h);
-            const heading = g && (i === 0 || group!(sorted[i - 1]).key !== g.key) ? <GroupRow key={`g-${g.key}`} label={g.label} span={7} drop={drop(g.key)} hint={drop(g.key) && t("move.here")} /> : null;
+            const heading = g && (i === 0 || group!(sorted[i - 1]).key !== g.key) ? <GroupRow key={`g-${g.key}`} label={g.label} span={where ? 8 : 7} drop={drop(g.key)} hint={drop(g.key) && t("move.here")} /> : null;
             const target = g ? drop(g.key) : undefined;
             return [
               heading,
@@ -151,18 +156,19 @@ export function HostTable({ hosts, alerts, where, group, move }: { hosts: HostSu
                 {...target?.handlers}
                 className={`group/row cursor-pointer border-b transition-colors last:border-b-0 hover:bg-accent/60 ${dragging?.host.id === h.host.id ? "opacity-40" : ""} ${target?.over ? "bg-brand/5" : ""}`}
               >
-                <td className="relative py-3 pr-3 pl-4">
+                <td className="relative py-2.5 pr-3 pl-4">
                   {move && <GripVertical className="absolute top-1/2 left-0.5 size-3.5 -translate-y-1/2 text-muted-foreground opacity-0 group-hover/row:opacity-60" aria-hidden />}
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex min-w-0 items-center gap-2.5">
                     <StatusIcon level={hostLevel(h, alerts)} />
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{h.host.name}</p>
-                      <p className="truncate text-mini text-muted-foreground">
-                        {h.host.waiting ? t("status.waiting") : h.host.online ? where(h) : h.host.agent_revoked ? t("status.revoked") : t("rows.offlineSince", { time: ago(h.host.last_seen) })}
-                      </p>
-                    </div>
+                    <span className="truncate font-medium">{h.host.name}</span>
+                    {!h.host.online && (
+                      <span className="truncate text-mini text-muted-foreground">
+                        {h.host.waiting ? t("status.waiting") : h.host.agent_revoked ? t("status.revoked") : t("rows.offlineSince", { time: ago(h.host.last_seen) })}
+                      </span>
+                    )}
                   </div>
                 </td>
+                {where && <td className="hidden px-3 whitespace-nowrap text-muted-foreground xl:table-cell">{where(h)}</td>}
                 <td className="px-3">{h.host.online ? <Bar pct={h.latest?.cpu} /> : null}</td>
                 <td className="hidden px-3 sm:table-cell">{h.host.online ? <Bar pct={mem(h)} /> : null}</td>
                 <td className="hidden px-3 sm:table-cell">{h.host.online ? <Bar pct={h.disk} /> : null}</td>
@@ -175,7 +181,7 @@ export function HostTable({ hosts, alerts, where, group, move }: { hosts: HostSu
                     </>
                   )}
                 </td>
-                <td className="pr-3 text-right" onClick={(e) => e.stopPropagation()}>
+                <td className={`pr-3 text-right ${bell}`} onClick={(e) => e.stopPropagation()}>
                   <AlertBell subject={`host:${h.host.id}`} name={h.host.name} kind="host" />
                 </td>
               </tr>,
@@ -186,9 +192,9 @@ export function HostTable({ hosts, alerts, where, group, move }: { hosts: HostSu
             move?.groups
               .filter((g) => !sorted.some((h) => group?.(h).key === g.key))
               .map((g) => [
-                <GroupRow key={`e-${g.key}`} label={g.label} span={7} drop={drop(g.key)} />,
+                <GroupRow key={`e-${g.key}`} label={g.label} span={where ? 8 : 7} drop={drop(g.key)} />,
                 <tr key={`p-${g.key}`} className="border-b last:border-b-0" {...drop(g.key)?.handlers}>
-                  <td colSpan={7} className="px-4 py-3 text-mini text-muted-foreground">
+                  <td colSpan={where ? 8 : 7} className="px-4 py-3 text-mini text-muted-foreground">
                     {t("move.empty")}
                   </td>
                 </tr>,
@@ -201,7 +207,7 @@ export function HostTable({ hosts, alerts, where, group, move }: { hosts: HostSu
 
 type CheckKey = "name" | "latency" | "cert";
 
-export function CheckTable({ checks, where, group }: { checks: Check[]; where: (c: Check) => string; group?: Grouping<Check> }) {
+export function CheckTable({ checks, where, group }: { checks: Check[]; where?: (c: Check) => string; group?: Grouping<Check> }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [sort, setSort] = useState<Sort<CheckKey>>({ key: "name", desc: false });
@@ -229,6 +235,7 @@ export function CheckTable({ checks, where, group }: { checks: Check[]; where: (
         <thead className="border-b">
           <tr>
             <Head k="name" {...p}>{t("table.check")}</Head>
+            {where && <th className="hidden h-10 px-3 font-medium whitespace-nowrap text-muted-foreground xl:table-cell">{t("table.customer")}</th>}
             <th className="hidden h-10 px-3 font-medium text-muted-foreground md:table-cell">{t("table.last24h")}</th>
             <Head k="latency" {...p} className="w-[10%]">{t("table.response")}</Head>
             <Head k="cert" {...p} className="hidden w-[10%] sm:table-cell">{t("table.certificate")}</Head>
@@ -239,21 +246,18 @@ export function CheckTable({ checks, where, group }: { checks: Check[]; where: (
           {sorted.map((c, i) => {
             const days = certDays(c);
             const g = group?.(c);
-            const heading = g && (i === 0 || group!(sorted[i - 1]).key !== g.key) ? <GroupRow key={`g-${g.key}`} label={g.label} span={5} /> : null;
+            const heading = g && (i === 0 || group!(sorted[i - 1]).key !== g.key) ? <GroupRow key={`g-${g.key}`} label={g.label} span={where ? 6 : 5} /> : null;
             return [
               heading,
-              <tr key={c.id} onClick={() => navigate({ to: "/checks/$id", params: { id: String(c.id) } })} className="cursor-pointer border-b transition-colors last:border-b-0 hover:bg-accent/60">
-                <td className="py-3 pr-3 pl-4">
-                  <div className="flex items-center gap-2.5">
+              <tr key={c.id} onClick={() => navigate({ to: "/checks/$id", params: { id: String(c.id) } })} className="group/row cursor-pointer border-b transition-colors last:border-b-0 hover:bg-accent/60">
+                <td className="py-2.5 pr-3 pl-4">
+                  <div className="flex min-w-0 items-center gap-2.5" title={target(c)}>
                     <StatusIcon level={checkLevel(c)} />
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{c.name}</p>
-                      <p className="truncate text-mini text-muted-foreground">
-                        {[where(c), t(`check.kind.${c.type}`), target(c)].filter(Boolean).join(" · ")}
-                      </p>
-                    </div>
+                    <span className="truncate font-medium">{c.name}</span>
+                    <span className="shrink-0 text-mini text-muted-foreground">{t(`check.kind.${c.type}`)}</span>
                   </div>
                 </td>
+                {where && <td className="hidden px-3 whitespace-nowrap text-muted-foreground xl:table-cell">{where(c)}</td>}
                 <td className="hidden w-[38%] px-3 md:table-cell">
                   {c.type !== "heartbeat" ? <UptimeBar checkID={c.id} /> : <span className="text-mini text-muted-foreground">{c.last_ping ? t("rows.lastPing", { time: ago(c.last_ping) }) : t("rows.noPing")}</span>}
                 </td>
@@ -261,7 +265,7 @@ export function CheckTable({ checks, where, group }: { checks: Check[]; where: (
                 <td className="hidden px-3 tabular-nums whitespace-nowrap sm:table-cell" style={days != null && days < 14 ? { color: "var(--warn)" } : undefined}>
                   {days != null ? t("check.days", { count: days }) : <span className="text-muted-foreground">–</span>}
                 </td>
-                <td className="pr-3 text-right" onClick={(e) => e.stopPropagation()}>
+                <td className={`pr-3 text-right ${bell}`} onClick={(e) => e.stopPropagation()}>
                   <AlertBell subject={`check:${c.id}`} name={c.name} kind={c.type === "heartbeat" ? "heartbeat" : "check"} />
                 </td>
               </tr>,

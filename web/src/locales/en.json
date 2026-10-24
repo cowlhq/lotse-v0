@@ -48,7 +48,40 @@
     "checkCount_one": "{{count}} check",
     "checkCount_other": "{{count}} checks",
     "noHostsYet": "No hosts yet. Add one with + Add.",
-    "noChecksYet": "No checks yet. Add one with + Add."
+    "noChecksYet": "No checks yet. Add one with + Add.",
+    "nothingHere": "Nothing here yet.",
+    "noMachines": "{{name}} has no machines yet.",
+    "notifyNowhere": "Alerts reach no one yet."
+  },
+  "tiles": {
+    "customer": "Customers",
+    "project": "Projects",
+    "environment": "Environments",
+    "last30": "Last 30 days",
+    "offline_one": "{{count}} offline",
+    "offline_other": "{{count}} offline",
+    "empty": "Nothing here yet"
+  },
+  "stats": {
+    "uptime": "Uptime, 30 days",
+    "response": "Response, median",
+    "cert": "Next certificate expires",
+    "inDays_one": "in {{count}} day",
+    "inDays_other": "in {{count}} days"
+  },
+  "begin": {
+    "question": "What do you want to watch first?",
+    "guide": "Or go step by step: customer, machine, check and alerts.",
+    "host": {
+      "title": "A server",
+      "text": "CPU, memory, disks, containers and services. One line installs the agent.",
+      "action": "Add a machine"
+    },
+    "check": {
+      "title": "A website or service",
+      "text": "Checked from outside every minute: websites, APIs, ports, certificates, domains and cron jobs.",
+      "action": "Add a check"
+    }
   },
   "status": {
     "online": "online",
@@ -791,7 +824,8 @@
     "check": "Check",
     "last24h": "Last 24 hours",
     "response": "Response",
-    "certificate": "Expires"
+    "certificate": "Expires",
+    "customer": "Customer"
   },
   "bell": {
     "title": "Alerts for {{name}}",
@@ -820,8 +854,6 @@
   },
   "start": {
     "title": "Get started",
-    "progress": "{{done}} of {{of}} done",
-    "hide": "Hide",
     "environment": {
       "title": "Create an environment",
       "hint": "Hosts and checks belong to one, such as a shop's production: customer, project, environment.",
@@ -848,7 +880,6 @@
       "heading": "Where should alerts go?",
       "text": "Add a channel and switch it on: email, Slack, Telegram, ntfy or another. Test sends a message right away."
     },
-    "guide": "Step by step",
     "next": "Next",
     "skip": "Skip",
     "later": "Finish later",

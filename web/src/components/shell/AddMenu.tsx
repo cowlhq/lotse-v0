@@ -20,11 +20,7 @@ export function AddMenu({ compact = false, direct }: { compact?: boolean; direct
   const { t } = useTranslation();
   const { user } = useMe();
   const [what, setWhat] = useState<What | null>(null);
-  const dialog = (
-    <Dialog open={what !== null} onOpenChange={(open) => !open && setWhat(null)}>
-      <DialogContent className={what === "host" ? "sm:max-w-2xl" : what === "check" ? "max-h-[90dvh] overflow-y-auto sm:max-w-xl" : undefined}>{what && <Body what={what} done={() => setWhat(null)} />}</DialogContent>
-    </Dialog>
-  );
+  const dialog = <AddDialog what={what} onClose={() => setWhat(null)} />;
   if (direct) {
     return (
       <>
@@ -69,6 +65,16 @@ export function AddMenu({ compact = false, direct }: { compact?: boolean; direct
       </DropdownMenu>
       {dialog}
     </>
+  );
+}
+
+// AddDialog adds a host, a check or an environment, asking first where a
+// host or check belongs; nothing is open while what is null.
+export function AddDialog({ what, onClose }: { what: What | null; onClose: () => void }) {
+  return (
+    <Dialog open={what !== null} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className={what === "host" ? "sm:max-w-2xl" : what === "check" ? "max-h-[90dvh] overflow-y-auto sm:max-w-xl" : undefined}>{what && <Body what={what} done={onClose} />}</DialogContent>
+    </Dialog>
   );
 }
 
