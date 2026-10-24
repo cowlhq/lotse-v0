@@ -794,7 +794,9 @@
     "noCustomers": "No customers yet.",
     "allCustomers": "All customers",
     "allProjects": "All projects",
-    "allEnvironments": "All environments"
+    "allEnvironments": "All environments",
+    "where": "Where you are",
+    "switch": "Switch"
   },
   "tabs": {
     "overview": "Overview",

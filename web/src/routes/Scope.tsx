@@ -66,7 +66,8 @@ export function Scope({ id }: { id: number }) {
       <ObjectHeader
         above={
           above.length > 0 && (
-            <span className="flex items-center gap-1.5">
+            // The bar shows the same trail where it has room.
+            <span className="flex items-center gap-1.5 md:hidden">
               {above.map((x, i) => (
                 <span key={x.id} className="flex items-center gap-1.5">
                   {i > 0 && <span className="text-muted-foreground/50">/</span>}

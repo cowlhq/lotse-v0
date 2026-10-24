@@ -78,9 +78,11 @@ export function TopBar({ onSearch }: { onSearch: () => void }) {
   );
 }
 
-// ScopeSwitcher says whose things one looks at, all customers' or one's,
-// and changes it. Under the customer one is in, its projects and
-// environments can be chosen too.
+// ScopeSwitcher says where one is, as a trail: Acme / Shop / Production.
+// Each step leads to its page, and its arrows open the others on the same
+// level, to go there instead. After the last step, the level below can be
+// chosen; with nothing chosen, the trail is "All customers". On a phone only
+// the last step shows.
 function ScopeSwitcher() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -90,37 +92,83 @@ function ScopeSwitcher() {
   const all = scopes.data ?? [];
   const byID = new Map(all.map((s) => [s.id, s]));
   const ids = new Set(all.map((s) => s.id));
+  const byName = (a: Scope, b: Scope) => a.name.localeCompare(b.name);
   // The top is the customers; for a user kept to a project or an
   // environment, that.
-  const roots = all.filter((s) => s.parent_id == null || !ids.has(s.parent_id)).sort((a, b) => a.name.localeCompare(b.name));
+  const roots = all.filter((s) => s.parent_id == null || !ids.has(s.parent_id)).sort(byName);
   const chosen = current != null ? byID.get(current) : undefined;
-  const root = chosen && rootOf(chosen, byID, ids);
-  const everything = roots.every((s) => s.kind === "customer") ? t("nav.allCustomers") : roots.every((s) => s.kind === "project") ? t("nav.allProjects") : t("nav.allEnvironments");
-  const label = chosen ? chain(chosen, byID, ids).map((s) => s.name).join(" / ") : everything;
-  const below = root ? all.filter((s) => s.path.startsWith(root.path + "/")).sort((a, b) => a.path.localeCompare(b.path)) : [];
-  const item = (s: Scope, depth: number) => (
-    <DropdownMenuItem key={s.id} onClick={() => navigate({ to: "/scopes/$id", params: { id: String(s.id) } })} style={{ paddingLeft: 8 + depth * 14 }}>
-      <StatusIcon level={levelUnder(alerts, s.path)} size={12} />
-      <span className="flex-1 truncate">{s.name}</span>
-      {current === s.id && <Check className="text-muted-foreground" />}
-    </DropdownMenuItem>
-  );
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="min-w-0 max-w-36 justify-between gap-2 font-normal sm:max-w-72" />}>
-        <span className="truncate">{label}</span>
-        <ChevronsUpDown className="text-muted-foreground" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="max-h-96 w-64 overflow-y-auto">
-        <DropdownMenuItem onClick={() => navigate({ to: "/" })}>
-          <span className="flex-1">{everything}</span>
-          {current == null && <Check className="text-muted-foreground" />}
+  const trail = chosen ? chain(chosen, byID, ids) : [];
+  const childrenOf = (s: Scope) => all.filter((x) => x.parent_id === s.id).sort(byName);
+  const everything = (list: Scope[]) => (list[0]?.kind === "project" ? t("nav.allProjects") : list[0]?.kind === "environment" ? t("nav.allEnvironments") : t("nav.allCustomers"));
+  const below = chosen ? childrenOf(chosen) : [];
+
+  // menu lists the scopes of one level, and above them "All …", which leads
+  // to the level above (home for the customers).
+  const menu = (list: Scope[], up: () => void, at?: number) => (
+    <DropdownMenuContent align="start" className="max-h-96 w-60 overflow-y-auto">
+      <DropdownMenuItem onClick={up}>
+        <span className="flex-1">{everything(list)}</span>
+        {at == null && <Check className="text-muted-foreground" />}
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      {list.map((s) => (
+        <DropdownMenuItem key={s.id} onClick={() => navigate({ to: "/scopes/$id", params: { id: String(s.id) } })}>
+          <StatusIcon level={levelUnder(alerts, s.path)} size={12} />
+          <span className="flex-1 truncate">{s.name}</span>
+          {at === s.id && <Check className="text-muted-foreground" />}
         </DropdownMenuItem>
-        {roots.length > 0 && <DropdownMenuSeparator />}
-        {roots.map((r) => [item(r, 0), ...(root?.id === r.id ? below.map((s) => item(s, s.path.split("/").length - r.path.split("/").length)) : [])])}
-        {roots.length === 0 && <p className="px-2 py-1.5 text-mini text-muted-foreground">{t("nav.noCustomers")}</p>}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      ))}
+    </DropdownMenuContent>
+  );
+  const goTo = (s?: Scope) => () => (s ? navigate({ to: "/scopes/$id", params: { id: String(s.id) } }) : navigate({ to: "/" }));
+  const slash = <span className="text-muted-foreground/40 select-none">/</span>;
+
+  return (
+    <nav className="flex min-w-0 items-center gap-1" aria-label={t("nav.where")}>
+      {trail.length === 0 && (
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="gap-1.5 px-2 font-medium" />}>
+            {everything(roots)}
+            <ChevronsUpDown className="text-muted-foreground" />
+          </DropdownMenuTrigger>
+          {menu(roots, goTo())}
+        </DropdownMenu>
+      )}
+      {trail.map((s, i) => {
+        const parent = i > 0 ? trail[i - 1] : undefined;
+        const level = parent ? childrenOf(parent) : roots;
+        const last = i === trail.length - 1;
+        return (
+          <span key={s.id} className={`flex min-w-0 items-center gap-1 ${last ? "" : "max-sm:hidden"}`}>
+            {i > 0 && <span className="max-sm:hidden">{slash}</span>}
+            <span className="flex min-w-0 items-center rounded-md transition-colors hover:bg-accent">
+              <Link to="/scopes/$id" params={{ id: String(s.id) }} className="flex min-w-0 items-center gap-1.5 py-1 pr-0.5 pl-2 font-medium">
+                <StatusIcon level={levelUnder(alerts, s.path)} size={12} />
+                <span className="max-w-40 truncate">{s.name}</span>
+              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger aria-label={t("nav.switch")} className="flex h-7 items-center rounded-md px-1 text-muted-foreground hover:text-foreground">
+                  <ChevronsUpDown className="size-3.5" />
+                </DropdownMenuTrigger>
+                {menu(level, goTo(parent), s.id)}
+              </DropdownMenu>
+            </span>
+          </span>
+        );
+      })}
+      {chosen && below.length > 0 && (
+        <span className="flex items-center gap-1 max-sm:hidden">
+          {slash}
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="gap-1.5 px-2 font-normal text-muted-foreground" />}>
+              {everything(below)}
+              <ChevronsUpDown />
+            </DropdownMenuTrigger>
+            {menu(below, goTo(chosen))}
+          </DropdownMenu>
+        </span>
+      )}
+    </nav>
   );
 }
 
@@ -153,12 +201,6 @@ export function useShowScope(id: number | null | undefined) {
     setHint(id ?? null);
     return () => setHint(null);
   }, [id, setHint]);
-}
-
-function rootOf(s: Scope, byID: Map<number, Scope>, ids: Set<number>): Scope {
-  let x = s;
-  while (x.parent_id != null && ids.has(x.parent_id)) x = byID.get(x.parent_id)!;
-  return x;
 }
 
 function chain(s: Scope, byID: Map<number, Scope>, ids: Set<number>): Scope[] {

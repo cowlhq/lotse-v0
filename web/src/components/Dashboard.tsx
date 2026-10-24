@@ -192,7 +192,9 @@ function Tiles({ scopes, hosts, checks, alerts, byID, kind }: { scopes: Scope[];
         <span className="flex-1" />
         <span className="text-mini text-muted-foreground">{t("tiles.last30")}</span>
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {/* Tiles keep their width, whether there are two or ten, so that their
+          days look alike everywhere; empty columns stay empty. */}
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-3">
         {scopes.map((s) => {
           const under = (p: string) => p === s.path || p.startsWith(s.path + "/");
           const h = hosts.filter((x) => under(pathOf(x.host.environment_id)));
@@ -237,6 +239,8 @@ function Tiles({ scopes, hosts, checks, alerts, byID, kind }: { scopes: Scope[];
   );
 }
 
+// Strip is the 30 days of a tile, filling its width; a tile has no room
+// to leave over, as a table's column has.
 function Strip({ days }: { days: (number | null)[] }) {
   return (
     <div className="flex h-5 gap-[2px]">
