@@ -23,10 +23,11 @@ old one.
 | [0015](0015-tooling-and-git.md) | mise, release-please, GoReleaser; rebase-merged PRs | 2026-10-13 |
 | [0016](0016-versions.md) | Until 1.0, releases count up the patch version | 2026-10-13 |
 | [0017](0017-alerting.md) | Alerts: a mail server per hub or channel, gathered, acknowledged | 2026-10-14 |
-| [0018](0018-interface.md) | The interface is as simple as Beszel's | 2026-10-14 |
+| [0018](0018-interface.md) | The interface is as simple as Beszel's (replaced by 0026) | 2026-10-14 |
 | [0019](0019-configuration-as-code.md) | Configuration as code: tokens per scope, secrets never in files | 2026-10-14 |
 | [0020](0020-read-api.md) | The read API is its own, stable part of the API | 2026-10-14 |
 | [0021](0021-retention.md) | Readings are averaged before they are deleted | 2026-10-14 |
 | [0022](0022-website.md) | lotse.sh presents lotse and carries its documentation | 2026-10-16 |
 | [0023](0023-users.md) | Users are invited, and may be kept to one customer | 2026-10-16 |
 | [0024](0024-check-secrets.md) | Checks have secrets, as channels do | 2026-10-16 |
+| [0026](0026-interface.md) | A bar on top, and a home page that shows what there is | 2026-10-24 |
