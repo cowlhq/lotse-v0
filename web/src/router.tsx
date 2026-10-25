@@ -7,7 +7,7 @@ import { useState } from "react";
 import { getHealth, getMe, Unauthorized } from "@/api";
 import { Centered } from "@/components/shell/Centered";
 import { CommandMenu } from "@/components/shell/CommandMenu";
-import { TopBar } from "@/components/shell/TopBar";
+import { ScopeHintProvider, TopBar } from "@/components/shell/TopBar";
 import { Toaster } from "@/components/ui/sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertDetail, Alerts } from "@/routes/Alerts";
@@ -64,6 +64,7 @@ function Layout() {
   const [search, setSearch] = useState(false);
   return (
     <FileDrop>
+      <ScopeHintProvider>
       <div className="flex min-h-dvh flex-col bg-sidebar">
         <TopBar onSearch={() => setSearch(true)} />
         <main className="min-w-0 flex-1 pb-16">
@@ -72,6 +73,7 @@ function Layout() {
         <CommandMenu open={search} onOpenChange={setSearch} />
         <Toaster position="bottom-right" />
       </div>
+      </ScopeHintProvider>
     </FileDrop>
   );
 }

@@ -64,8 +64,9 @@ long as the hourly ones. Change it in the hub's settings (`retention.raw`,
 
 ## Agents
 
-Every environment has an **Add agent** button. It shows the command with the
-environment's enrollment token in it, for one of three ways:
+**Add**, then **A server**, asks for which customer (and group) the machine
+is, and shows the command with that environment's enrollment token in it,
+for one of three ways:
 
 **systemd**
 

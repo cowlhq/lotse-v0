@@ -7,7 +7,7 @@ import { ChooseFile } from "@/components/ApplyFile";
 import { Page } from "@/components/shell/PageHeader";
 import { ObjectHeader } from "@/components/shell/Panel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BellRing, Cog, Download, History, KeyRound, Radar, Send, SlidersHorizontal, Users as UsersIcon, Wrench } from "lucide-react";
+import { Download } from "lucide-react";
 import { Tokens } from "@/components/Tokens";
 import { Users } from "@/components/Users";
 import { Channels } from "@/components/Channels";
@@ -33,20 +33,21 @@ export function Settings({ tab }: { tab?: string }) {
   const hosts = useQuery({ queryKey: ["hosts"], queryFn: listHosts });
   // These settings are the whole hub's; a user kept to a customer has none.
   if (scoped) return <Navigate to="/" />;
+  // In the words a customer's settings use (decision 0027).
   const sections = [
-    { value: "general", label: t("settings.general"), icon: <SlidersHorizontal /> },
-    { value: "notifications", label: t("settings.notifications"), icon: <Send /> },
-    { value: "rules", label: t("settings.rules"), icon: <BellRing /> },
-    { value: "probes", label: t("probe.title"), icon: <Radar /> },
-    { value: "maintenance", label: t("maintenance.title"), icon: <Wrench /> },
+    { value: "general", label: t("settings.general") },
+    { value: "notifications", label: t("thing.settings.told") },
+    { value: "rules", label: t("thing.settings.rules") },
+    { value: "maintenance", label: t("thing.settings.quiet") },
+    { value: "probes", label: t("settings.locations") },
     ...(isAdmin
       ? [
-          { value: "users", label: t("user.title"), icon: <UsersIcon /> },
-          { value: "tokens", label: t("token.title"), icon: <KeyRound /> },
+          { value: "users", label: t("settings.people") },
+          { value: "tokens", label: t("token.title") },
         ]
       : []),
-    { value: "advanced", label: t("settings.advanced"), icon: <Cog /> },
-    { value: "activity", label: t("tabs.activity"), icon: <History /> },
+    { value: "advanced", label: t("thing.settings.advanced") },
+    { value: "activity", label: t("thing.settings.changes") },
   ];
   return (
     <>
@@ -59,9 +60,8 @@ export function Settings({ tab }: { tab?: string }) {
               <TabsTrigger
                 key={x.value}
                 value={x.value}
-                className="h-9 flex-none justify-start gap-2.5 rounded-md max-md:w-auto! border-0 px-2.5 text-ui! font-medium text-muted-foreground after:hidden hover:bg-sidebar-accent hover:text-foreground data-active:chip data-active:bg-card! data-active:text-foreground! [&_svg]:size-4"
+                className="h-8 flex-none justify-start gap-2.5 rounded-md max-md:w-auto! border-0 px-2.5 text-ui! font-normal text-muted-foreground after:hidden hover:bg-sidebar-accent hover:text-foreground data-active:chip data-active:bg-card! data-active:font-medium data-active:text-foreground!"
               >
-                {x.icon}
                 {x.label}
               </TabsTrigger>
             ))}

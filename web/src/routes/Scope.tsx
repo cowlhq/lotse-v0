@@ -1,23 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { Download, Pencil, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { deleteScope, exportURL, getScope, listChecks, listHosts, listScopes, NotFound, renameScope, setHostEnvironment, updateScope, type HostSummary } from "@/api";
-import { toast } from "sonner";
+import { deleteScope, exportURL, getScope, listChecks, listHosts, listScopes, NotFound, renameScope, updateScope, type HostSummary } from "@/api";
 import { AlertHistory, useAlerts } from "@/components/Alerts";
+import { useCheckStats } from "@/components/Dashboard";
 import { Incidents } from "@/components/Incidents";
-import { CheckTable, HostTable } from "@/components/Tables";
+import { ThingList } from "@/components/ThingList";
+import { AddThing } from "@/components/AddThing";
 import { StatusIcon } from "@/components/shell/Dot";
-import { Empty, Page } from "@/components/shell/PageHeader";
-import { Facts, ObjectHeader, Panel } from "@/components/shell/Panel";
-import { PageTabs } from "@/components/shell/PageTabs";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Section, SettingsSheet } from "@/components/shell/SettingsSheet";
 import { levelUnder, isFiring } from "@/lib/status";
+import { things, type Thing } from "@/lib/things";
 import { Channels } from "@/components/Channels";
 import { Maintenance } from "@/components/Maintenance";
-import { AddAgent } from "@/components/AddAgent";
-import { AddCheck } from "@/components/AddCheck";
 import { Config } from "@/components/Config";
 import { ChooseFile } from "@/components/ApplyFile";
 import { History } from "@/components/History";
@@ -28,40 +25,27 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/useMe";
 import { useUpdates } from "@/lib/useUpdates";
 
-// useMoveHost moves a host to another environment, with a toast that can
-// take it back.
-function useMoveHost() {
-  const { t } = useTranslation();
-  const client = useQueryClient();
-  const move = useMutation({
-    mutationFn: ({ h, envID }: { h: HostSummary; envID: number | null; to: string; undo?: boolean }) => setHostEnvironment(h.host.id, envID),
-    onSuccess: (_, { h, to, undo }) => {
-      client.invalidateQueries({ queryKey: ["hosts"] });
-      client.invalidateQueries({ queryKey: ["host", h.host.id] });
-      client.invalidateQueries({ queryKey: ["changes"] });
-      if (undo) return;
-      const from = h.host.environment_id ?? null;
-      toast.success(t("move.moved", { name: h.host.name, to }), {
-        action: { label: t("move.undo"), onClick: () => move.mutate({ h, envID: from, to: "", undo: true }) },
-      });
-    },
-    onError: (e) => toast.error(e.message),
-  });
-  return (h: HostSummary, envID: number, to: string) => move.mutate({ h, envID, to });
-}
-
-// Scope is the page of a customer, project or environment: how it stands
-// and what is in it first; its alerts, notifications, maintenance, settings
-// and history in tabs.
+// Scope is the page of a customer, project or environment: how it stands,
+// what needs attention, and everything lotse watches there, servers and
+// checks alike (decision 0027). What can be set is in a sheet at its side.
 export function Scope({ id }: { id: number }) {
   const { t } = useTranslation();
   const { isAdmin } = useMe();
   const scope = useQuery({ queryKey: ["scope", id], queryFn: () => getScope(id) });
   const scopes = useQuery({ queryKey: ["scopes"], queryFn: listScopes });
-  const hosts = useQuery({ queryKey: ["hosts"], queryFn: listHosts });
-  const checks = useQuery({ queryKey: ["checks", "all"], queryFn: () => listChecks() });
+  const hosts = useQuery({ queryKey: ["hosts"], queryFn: listHosts, refetchInterval: 60_000 });
+  const checks = useQuery({ queryKey: ["checks", "all"], queryFn: () => listChecks(), refetchInterval: 30_000 });
   const alerts = useAlerts().data ?? [];
-  const moveHost = useMoveHost();
+  const [settings, setSettings] = useState(false);
+  // The checks in this scope, for its uptime; worked out before the page
+  // knows whether the scope exists, as hooks must be.
+  const scopePath = scope.data?.path;
+  const envPath = new Map((scopes.data ?? []).map((s) => [s.id, s.path]));
+  const inScope = (envID?: number | null) => {
+    const p = envID ? envPath.get(envID) : undefined;
+    return scopePath !== undefined && p !== undefined && (p === scopePath || p.startsWith(scopePath + "/"));
+  };
+  const stats = useCheckStats((checks.data ?? []).filter((c) => inScope(c.environment_id)));
 
   if (scope.isPending) return <Skeleton className="m-6 h-32" />;
   if (scope.error instanceof NotFound) return <p className="p-6">{t("tree.notFound")}</p>;
@@ -69,166 +53,104 @@ export function Scope({ id }: { id: number }) {
 
   const all = scopes.data ?? [];
   const byID = new Map(all.map((s) => [s.id, s]));
-  const above: typeof all = [];
-  for (let p = scope.data.parent_id; p; p = byID.get(p)?.parent_id) {
-    const s = byID.get(p);
-    if (s) above.unshift(s);
-  }
-  // Whether an environment lies in this scope.
-  const below = (envID?: number | null) => {
-    const e = envID ? byID.get(envID) : undefined;
-    return !!e && (e.path === scope.data.path || e.path.startsWith(scope.data.path + "/"));
-  };
   const children = all.filter((s) => s.parent_id === id);
-  const myChecks = (checks.data ?? []).filter((c) => below(c.environment_id));
-  // Below an environment, rows are grouped by the environment they are in,
-  // named from here: Shop / Prod on ACME's page.
-  const groupOf = (envID: number | null | undefined) => {
-    const e = envID ? byID.get(envID) : undefined;
-    const names: string[] = [];
-    for (let x = e; x && x.id !== id; x = x.parent_id ? byID.get(x.parent_id) : undefined) names.unshift(x.name);
-    return {
-      key: e?.path ?? "",
-      name: names.join(" / "),
-      label: e ? (
-        <Link to="/scopes/$id" params={{ id: String(e.id) }} className="hover:underline" onClick={(ev) => ev.stopPropagation()}>
-          {names.join(" / ")}
-        </Link>
-      ) : (
-        ""
-      ),
-    };
-  };
-  const mine = (hosts.data ?? []).filter((h) => below(h.host.environment_id));
-  // Where a check is, below this scope: nothing for one of the environment's
-  // own, the host and container for one a container's labels made, whose
-  // key goes on through them (web-01/shop-app/web).
-  const within = (path: string) => {
-    const parts = path.slice(scope.data.path.length + 1).split("/");
-    return env ? parts.slice(0, -1).join("/") : "";
-  };
+  const myHosts = (hosts.data ?? []).filter((h) => inScope(h.host.environment_id));
+  const myChecks = (checks.data ?? []).filter((c) => inScope(c.environment_id));
+  const list = things(myHosts, myChecks, alerts, all);
   const subject = `${scope.data.kind}:${id}`;
-  const env = scope.data.kind === "environment";
   const problems = alerts.filter((a) => isFiring(a) && (a.subject_path === scope.data.path || a.subject_path.startsWith(scope.data.path + "/")));
+  // Things go under the project they are in, named from here, and under
+  // its environment too where a project has more than one; headings only
+  // where there is more than one group.
+  const envsOf = (projectID: number) => all.filter((s) => s.parent_id === projectID).length;
+  const groupOf = (x: Thing) => {
+    const e = x.envID ? byID.get(x.envID) : undefined;
+    if (!e) return { key: "~", label: t("overview.unassigned") };
+    const names: string[] = [];
+    for (let s: typeof e | undefined = e; s && s.id !== id; s = s.parent_id ? byID.get(s.parent_id) : undefined) {
+      if (s.kind === "environment" && s.parent_id && envsOf(s.parent_id) < 2) continue;
+      if (s.kind !== "customer") names.unshift(s.name);
+    }
+    return { key: names.join("/"), label: names.join(" · ") };
+  };
+  const grouped = new Set(list.map((x) => groupOf(x).key)).size > 1;
 
   return (
-    <Tabs defaultValue="overview" className="gap-0">
-      <ObjectHeader
-        above={
-          above.length > 0 && (
-            <span className="flex items-center gap-1.5">
-              {above.map((x, i) => (
-                <span key={x.id} className="flex items-center gap-1.5">
-                  {i > 0 && <span className="text-muted-foreground/50">/</span>}
-                  <Link to="/scopes/$id" params={{ id: String(x.id) }} className="hover:text-foreground hover:underline">
-                    {x.name}
-                  </Link>
-                </span>
+    <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 md:px-6">
+      <div className="flex flex-wrap items-start gap-3">
+        {/* On a phone the name has the line to itself, the buttons go under it. */}
+        <div className="min-w-0 flex-1 basis-full space-y-1 sm:basis-auto">
+          <h1 className="flex items-center gap-3 text-2xl font-semibold tracking-tight">
+            {list.length > 0 && <StatusIcon level={levelUnder(alerts, scope.data.path)} size={22} />}
+            <span className="truncate">{scope.data.name}</span>
+          </h1>
+          <p className="text-muted-foreground">
+            {[
+              t("thing.count", { count: list.length }),
+              stats.uptime && t("stats.uptimeFact", { value: stats.uptime }),
+              problems.length > 0 && <span style={{ color: problems.some((a) => a.state === "crit") ? "var(--crit)" : "var(--warn)" }}>{t("thing.needYou", { count: problems.length })}</span>,
+            ]
+              .filter(Boolean)
+              .map((x, i) => (
+                <Fragment key={i}>
+                  {i > 0 && " · "}
+                  {x}
+                </Fragment>
               ))}
-            </span>
-          )
-        }
-        icon={mine.length + myChecks.length > 0 ? <StatusIcon level={levelUnder(alerts, scope.data.path)} size={22} /> : null}
-        title={scope.data.name}
-        actions={
-          isAdmin &&
-          env && (
-            <>
-              <AddCheck envID={id} />
-              <AddAgent envID={id} />
-            </>
-          )
-        }
-        facts={
-          <Facts
-            items={[
-              t(`config.kinds.${scope.data.kind}`),
-              t("overview.hostCount", { count: mine.length }),
-              t("overview.checkCount", { count: myChecks.length }),
-              !env && children.length > 0 && t(`tree.childCount.${scope.data.kind}`, { count: children.length }),
-            ]}
-          />
-        }
-      />
-      <Page>
-        <PageTabs
-          tabs={[
-            { value: "overview", label: t("tabs.overview") },
-            { value: "alerts", label: t("tabs.alerts"), count: problems.length },
-            { value: "notifications", label: t("tabs.notifications") },
-            { value: "maintenance", label: t("tabs.maintenance") },
-            { value: "settings", label: t("tabs.settings") },
-            { value: "activity", label: t("tabs.activity") },
-          ]}
-        />
-      <TabsContent value="overview" className="space-y-6">
-          {problems.length > 0 && (
-            <section className="overflow-hidden rounded-lg border bg-card">
-              <Incidents alerts={problems} />
-            </section>
-          )}
-          <Panel title={t("nav.hosts")} count={mine.length} flush>
-            {mine.length === 0 ? (
-              <Empty>{env ? t("overview.noHostsAdd") : t("overview.noHostsYet")}</Empty>
-            ) : (
-              <HostTable
-                hosts={mine}
-                alerts={alerts}
-                where={(h) => h.host.platform || h.host.os}
-                group={env ? undefined : (h) => groupOf(h.host.environment_id)}
-                move={
-                  isAdmin && !env
-                    ? {
-                        groups: all.filter((s) => s.kind === "environment" && below(s.id)).map((s) => ({ ...groupOf(s.id), envID: s.id })),
-                        onMove: (h, envID) => moveHost(h, envID, groupOf(envID).name),
-                      }
-                    : undefined
-                }
-              />
-            )}
-          </Panel>
-          <Panel title={t("nav.checks")} count={myChecks.length} flush>
-            {myChecks.length === 0 ? (
-              <Empty>{env ? t("check.none") : t("overview.noChecksYet")}</Empty>
-            ) : (
-              <CheckTable checks={myChecks} where={(c) => within(c.path)} group={env ? undefined : (c) => groupOf(c.environment_id)} />
-            )}
-          </Panel>
-          {isAdmin && <UpdateAgents scopeID={id} hosts={mine} />}
-      </TabsContent>
-      <TabsContent value="alerts">
-          <AlertHistory subject={subject} always />
-      </TabsContent>
-      <TabsContent value="notifications">
-          <Channels scopeID={id} subject={subject} name={scope.data.name} />
-      </TabsContent>
-      <TabsContent value="maintenance">
-          <Maintenance subject={subject} />
-      </TabsContent>
-      <TabsContent value="settings" className="space-y-6">
-          <div className="space-y-1">
-            <Title id={id} name={scope.data.name} canEdit={isAdmin} />
-            <p className="text-mini text-muted-foreground">
-              {t(`config.kinds.${scope.data.kind}`)} · {t("tree.key")} <code>{scope.data.path}</code>
-            </p>
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => setSettings(true)}>
+          {t("tabs.settings")}
+        </Button>
+        {isAdmin && <AddThing scope={scope.data} />}
+      </div>
+
+      {problems.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-medium">{t("thing.attention")}</h2>
+          <div className="overflow-hidden rounded-xl border bg-card">
+            <Incidents alerts={problems} from={scope.data.path} />
           </div>
+        </section>
+      )}
+
+      <section className="space-y-3">
+        <div className="flex items-baseline">
+          <h2 className="flex-1 font-medium">{t("thing.everything")}</h2>
+          <span className="text-mini text-muted-foreground">{t("table.last24h")}</span>
+        </div>
+        {list.length === 0 ? <p className="rounded-xl border border-dashed px-6 py-10 text-center text-muted-foreground">{t("overview.nothingHere")}</p> : <ThingList things={list} group={grouped ? groupOf : undefined} />}
+      </section>
+      {isAdmin && <UpdateAgents scopeID={id} hosts={myHosts} />}
+
+      <SettingsSheet open={settings} onOpenChange={setSettings} title={scope.data.name} description={`${t(`config.kinds.${scope.data.kind}`)} · ${scope.data.path}`}>
+        <Section title={t("thing.settings.name")}>
+          <Title id={id} name={scope.data.name} canEdit={isAdmin} />
+        </Section>
+        {/* Channels and maintenance name themselves. */}
+        <Channels scopeID={id} subject={subject} name={scope.data.name} />
+        <Maintenance subject={subject} />
+        <Section title={t("thing.settings.rules")} hint={t("thing.settings.rulesHint")}>
           <Config subject={subject} />
-          {isAdmin && (
-            <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" render={<a href={exportURL(scope.data.path)} download={`${scope.data.slug}.lotse.yaml`} />}>
-              <Download />
-              {t("token.download")}
-            </Button>
-            <ChooseFile />
-            </div>
-          )}
-          {isAdmin && mine.length === 0 && children.length === 0 && myChecks.length === 0 && <Delete id={id} />}
-      </TabsContent>
-      <TabsContent value="activity">
+        </Section>
+        <Section title={t("thing.settings.history")}>
+          <AlertHistory subject={subject} always />
           <History subject={subject} />
-      </TabsContent>
-      </Page>
-    </Tabs>
+        </Section>
+        {isAdmin && (
+          <Section title={t("thing.settings.more")}>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" render={<a href={exportURL(scope.data.path)} download={`${scope.data.slug}.lotse.yaml`} />}>
+                <Download />
+                {t("token.download")}
+              </Button>
+              <ChooseFile />
+            </div>
+            {list.length === 0 && children.length === 0 && <Delete id={id} />}
+          </Section>
+        )}
+      </SettingsSheet>
+    </div>
   );
 }
 

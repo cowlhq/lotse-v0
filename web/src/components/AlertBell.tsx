@@ -12,7 +12,7 @@ import { useMe } from "@/lib/useMe";
 // Rule). What is set here applies to this object only; what is not set
 // comes from above.
 
-type Kind = "host" | "check" | "heartbeat";
+export type Kind = "host" | "check" | "heartbeat";
 
 const rulesOf: Record<Kind, string[]> = {
   host: ["host.silent", "host.cpu", "host.memory", "host.disk", "host.swap", "host.load", "host.iowait", "host.unit", "host.service", "host.reboot", "container.unhealthy", "container.restarting"],
@@ -47,5 +47,19 @@ export function AlertBell({ subject, name, kind }: { subject: string; name: stri
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ObjectRules are the same switches, for a thing's settings: each rule as
+// it applies here, set here or coming from above.
+export function ObjectRules({ subject, kind }: { subject: string; kind: Kind }) {
+  const config = useQuery({ queryKey: ["config", subject], queryFn: () => getConfig(subject) });
+  if (!config.data) return null;
+  return (
+    <ul className="divide-y overflow-hidden rounded-xl border bg-card">
+      {rulesOf[kind].map((rule) => (
+        <Rule key={rule} subject={subject} rule={rule} values={config.data} />
+      ))}
+    </ul>
   );
 }

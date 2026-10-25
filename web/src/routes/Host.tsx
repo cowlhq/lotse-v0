@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { Ban, FolderInput, MoreHorizontal } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { getConfig, getHost, getSeries, listEvents, listScopes, NotFound, revokeAgent, setHostEnvironment, updateHost, type Container, type Host as HostData, type HostDetail, type Series, type SystemUnit } from "@/api";
-import { AlertBell } from "@/components/AlertBell";
+import { ObjectRules } from "@/components/AlertBell";
 import { AlertHistory, useAlerts } from "@/components/Alerts";
 import { Chart, type Line } from "@/components/Chart";
 import { Config } from "@/components/Config";
@@ -17,15 +17,16 @@ import { Maintenance } from "@/components/Maintenance";
 import { RangePicker, type RangeSeconds } from "@/components/Range";
 import { StatusIcon } from "@/components/shell/Dot";
 import { Page } from "@/components/shell/PageHeader";
-import { PageTabs } from "@/components/shell/PageTabs";
+import { Section, SettingsSheet } from "@/components/shell/SettingsSheet";
+import { HostDay } from "@/components/UptimeBar";
 import { Facts, ObjectHeader, Panel } from "@/components/shell/Panel";
-import { Bar } from "@/components/Tables";
+import { ScopeTrail } from "@/components/shell/ScopeTrail";
+import { Bar } from "@/components/Bar";
 import { UpdateBadge } from "@/components/UpdateBadge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ago, bytes, duration, number, percent, rate } from "@/lib/format";
 import { appendReading, useLive, type LiveMessage } from "@/lib/live";
 import { useMe } from "@/lib/useMe";
@@ -51,6 +52,7 @@ export function Host({ id }: { id: number }) {
   const alerts = useAlerts().data ?? [];
   const charts = useCharts();
   const { last: lastLive, update } = useLiveHost(id);
+  const [settings, setSettings] = useState(false);
 
   if (host.isPending) return <Skeleton className="m-6 h-64" />;
   if (host.error instanceof NotFound) return <p className="p-6">{t("host.notFound")}</p>;
@@ -64,15 +66,17 @@ export function Host({ id }: { id: number }) {
   const running = d.containers.filter((c) => c.state === "running" && c.gone_at == null).length;
 
   return (
-    <Tabs defaultValue="overview" className="gap-0">
+    <>
       <ObjectHeader
-        above={<EnvironmentLink envID={h.environment_id ?? null} />}
+        above={<ScopeTrail envID={h.environment_id ?? null} />}
         icon={<StatusIcon level={level} size={22} />}
         title={h.name}
         actions={
           <>
             <LiveBadge last={lastLive} />
-            <AlertBell subject={subject} name={h.name} kind="host" />
+            <Button variant="outline" size="sm" onClick={() => setSettings(true)}>
+              {t("tabs.settings")}
+            </Button>
             <HostMenu host={h} />
           </>
         }
@@ -81,11 +85,9 @@ export function Host({ id }: { id: number }) {
             items={[
               h.waiting ? t("status.waiting") : h.online ? t("status.online") : h.agent_revoked ? t("status.revoked") : t("rows.offlineSince", { time: ago(h.last_seen) }),
               h.platform || h.os,
-              h.cpu_model ? `${h.cores} × ${h.cpu_model}` : t("host.cores", { count: h.cores }),
+              t("host.cores", { count: h.cores }),
               bytes(h.mem_total),
               d.latest?.uptime != null && t("host.upFor", { time: duration(d.latest.uptime) }),
-              `${t("host.agent")} ${h.agent_version}`,
-              h.docker_version && `Docker ${h.docker_version}`,
               d.system?.reboot_required && (
                 <span style={{ color: "var(--warn)" }} title={d.system.reboot_reason}>
                   {t("host.rebootRequired")}
@@ -105,69 +107,76 @@ export function Host({ id }: { id: number }) {
       <Page>
         <AgentUpdate host={h} status={update} />
         {problems.length > 0 && (
-          <section className="overflow-hidden rounded-lg border bg-card">
+          <section className="overflow-hidden rounded-xl border bg-card">
             <Incidents alerts={problems} />
           </section>
         )}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <PageTabs
-            tabs={[
-              { value: "overview", label: t("tabs.overview") },
-              { value: "containers", label: t("host.containers"), count: d.containers.filter((c) => c.gone_at == null).length },
-              { value: "alerts", label: t("tabs.alerts") },
-              { value: "settings", label: t("tabs.settings") },
-              { value: "activity", label: t("tabs.activity") },
-            ]}
-          />
-          <RangePicker value={seconds} onChange={setSeconds} />
-        </div>
-        <TabsContent value="overview" className="space-y-4">
-          {h.waiting && (
-            <Panel title={t("host.waitingTitle")}>
-              <p className="text-muted-foreground">{t("host.waitingHint", { name: h.name })}</p>
-            </Panel>
-          )}
+        {h.waiting && (
+          <Panel title={t("host.waitingTitle")}>
+            <p className="text-muted-foreground">{t("host.waitingHint", { name: h.name })}</p>
+          </Panel>
+        )}
+        <section className="space-y-3">
+          <h2 className="font-medium">{t("thing.last30")}</h2>
+          <HostDay hostID={id} firstSeen={h.first_seen} slices={30} hours={720} fill />
+        </section>
+        <section className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-medium">{t("thing.load")}</h2>
+            <RangePicker value={seconds} onChange={setSeconds} />
+          </div>
           <div className="grid gap-4 lg:grid-cols-2">
             {charts.map((c) => (
               <Panel key={c.title} title={t(c.title)} right={<span className="text-foreground tabular-nums">{c.now(current)}</span>}>
-                <Chart data={series.data} lines={c.lines} format={c.format} range={range} events={events.data} max={c.max} binary={c.binary} />
+                <Chart data={series.data} lines={c.lines} format={c.format} range={range} events={events.data} max={c.max} binary={c.binary} height={130} />
               </Panel>
             ))}
           </div>
-          <Filesystems detail={d} />
-          <Services hostID={id} detail={d} />
-        </TabsContent>
-        <TabsContent value="containers">
+        </section>
+        {d.containers.some((c) => c.gone_at == null) && (
           <Panel title={t("host.containers")} right={t("host.running", { count: running })} flush>
             <Containers containers={d.containers} />
           </Panel>
-        </TabsContent>
-        <TabsContent value="alerts" className="space-y-6">
+        )}
+        <Filesystems detail={d} />
+        <Services hostID={id} detail={d} />
+        <section className="space-y-3">
+          <h2 className="font-medium">{t("thing.settings.history")}</h2>
           <AlertHistory subject={subject} always />
-          <Maintenance subject={subject} />
-        </TabsContent>
-        <TabsContent value="settings" className="space-y-6">
-          <Config subject={subject} envID={h.environment_id ?? undefined} />
-        </TabsContent>
-        <TabsContent value="activity" className="space-y-6">
           <Events events={events.data ?? []} />
-          <History subject={subject} />
-        </TabsContent>
+        </section>
       </Page>
-    </Tabs>
-  );
-}
-
-// EnvironmentLink names where a host is, leading there.
-function EnvironmentLink({ envID }: { envID: number | null }) {
-  const { t } = useTranslation();
-  const scopes = useQuery({ queryKey: ["scopes"], queryFn: listScopes });
-  const env = (scopes.data ?? []).find((s) => s.id === envID);
-  if (!env) return <span>{t("overview.unassigned")}</span>;
-  return (
-    <Link to="/scopes/$id" params={{ id: String(env.id) }} className="font-mono text-mini hover:text-foreground hover:underline">
-      {env.path}
-    </Link>
+      <SettingsSheet open={settings} onOpenChange={setSettings} title={h.name} description={t("thing.kind.server")}>
+        <Section title={t("thing.settings.tell")} hint={t("thing.settings.tellHint")}>
+          <ObjectRules subject={subject} kind="host" />
+        </Section>
+        <Maintenance subject={subject} />
+        <Section title={t("host.machine")}>
+          <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1.5">
+            {[
+              [t("host.system"), h.platform || h.os],
+              [t("host.cpu"), h.cpu_model ? `${h.cores} × ${h.cpu_model}` : t("host.cores", { count: h.cores })],
+              [t("host.memoryTotal"), bytes(h.mem_total)],
+              [t("host.agent"), h.agent_version],
+              ["Docker", h.docker_version],
+            ]
+              .filter(([, v]) => v)
+              .map(([k, v]) => (
+                <Fragment key={k}>
+                  <dt className="text-muted-foreground">{k}</dt>
+                  <dd>{v}</dd>
+                </Fragment>
+              ))}
+          </dl>
+        </Section>
+        <Section title={t("thing.settings.advanced")} hint={t("thing.settings.advancedHint")}>
+          <Config subject={subject} envID={h.environment_id ?? undefined} />
+        </Section>
+        <Section title={t("thing.settings.changes")}>
+          <History subject={subject} />
+        </Section>
+      </SettingsSheet>
+    </>
   );
 }
 

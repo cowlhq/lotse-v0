@@ -14,10 +14,10 @@ import { Maintenance } from "@/components/Maintenance";
 import { RangePicker, type RangeSeconds } from "@/components/Range";
 import { StatusIcon } from "@/components/shell/Dot";
 import { Page } from "@/components/shell/PageHeader";
-import { PageTabs } from "@/components/shell/PageTabs";
+import { Section, SettingsSheet } from "@/components/shell/SettingsSheet";
+import { Button } from "@/components/ui/button";
 import { Facts, ObjectHeader, Panel } from "@/components/shell/Panel";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ago, bytes, percent, rate } from "@/lib/format";
 import { appendReading, useLive } from "@/lib/live";
 import { useRange } from "@/lib/useRange";
@@ -27,6 +27,7 @@ import { isFiring } from "@/lib/status";
 export function Container({ id }: { id: number }) {
   const { t } = useTranslation();
   const [seconds, setSeconds] = useState<RangeSeconds>(3600);
+  const [settings, setSettings] = useState(false);
   const range = useRange(seconds);
   const container = useQuery({ queryKey: ["container", id], queryFn: () => getContainer(id), refetchInterval: 15_000 });
   const series = useQuery({
@@ -89,7 +90,7 @@ export function Container({ id }: { id: number }) {
   const current = c.latest as Record<string, number | null | undefined> | undefined;
 
   return (
-    <Tabs defaultValue="overview" className="gap-0">
+    <>
       <ObjectHeader
         above={
           <Link to="/hosts/$id" params={{ id: String(c.host_id) }} className="hover:text-foreground hover:underline">
@@ -98,7 +99,14 @@ export function Container({ id }: { id: number }) {
         }
         icon={<StatusIcon level={level} size={22} />}
         title={c.slug}
-        actions={<LiveBadge last={lastLive} />}
+        actions={
+          <>
+            <LiveBadge last={lastLive} />
+            <Button variant="outline" size="sm" onClick={() => setSettings(true)}>
+              {t("tabs.settings")}
+            </Button>
+          </>
+        }
         facts={
           <Facts
             items={[
@@ -113,42 +121,38 @@ export function Container({ id }: { id: number }) {
       />
       <Page>
         {problems.length > 0 && (
-          <section className="overflow-hidden rounded-lg border bg-card">
+          <section className="overflow-hidden rounded-xl border bg-card">
             <Incidents alerts={problems} />
           </section>
         )}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <PageTabs
-            tabs={[
-              { value: "overview", label: t("tabs.overview") },
-              { value: "alerts", label: t("tabs.alerts") },
-              { value: "settings", label: t("tabs.settings") },
-              { value: "activity", label: t("tabs.activity") },
-            ]}
-          />
-          <RangePicker value={seconds} onChange={setSeconds} />
-        </div>
-        <TabsContent value="overview">
+        <section className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-medium">{t("thing.load")}</h2>
+            <RangePicker value={seconds} onChange={setSeconds} />
+          </div>
           <div className="grid gap-4 lg:grid-cols-2">
             {charts.map((ch) => (
               <Panel key={ch.title} title={t(ch.title)} right={<span className="text-foreground tabular-nums">{c.state === "running" ? ch.now(current) : "–"}</span>}>
-                <Chart data={series.data} lines={ch.lines} format={ch.format} range={range} events={events.data} binary={ch.binary} />
+                <Chart data={series.data} lines={ch.lines} format={ch.format} range={range} events={events.data} binary={ch.binary} height={130} />
               </Panel>
             ))}
           </div>
-        </TabsContent>
-        <TabsContent value="alerts" className="space-y-6">
+        </section>
+        <section className="space-y-3">
+          <h2 className="font-medium">{t("thing.settings.history")}</h2>
           <AlertHistory subject={subject} always />
-          <Maintenance subject={subject} />
-        </TabsContent>
-        <TabsContent value="settings" className="space-y-6">
-          <Config subject={subject} />
-        </TabsContent>
-        <TabsContent value="activity" className="space-y-6">
           <Events events={events.data ?? []} />
-          <History subject={subject} />
-        </TabsContent>
+        </section>
       </Page>
-    </Tabs>
+      <SettingsSheet open={settings} onOpenChange={setSettings} title={c.slug} description={c.host_name}>
+        <Maintenance subject={subject} />
+        <Section title={t("thing.settings.advanced")} hint={t("thing.settings.advancedHint")}>
+          <Config subject={subject} />
+        </Section>
+        <Section title={t("thing.settings.changes")}>
+          <History subject={subject} />
+        </Section>
+      </SettingsSheet>
+    </>
   );
 }

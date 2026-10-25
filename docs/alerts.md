@@ -7,11 +7,14 @@ wrong. Installing the hub, agents and probes is in
 
 ## Checks
 
-Add a check in an environment with **Add check**, in a `lotse.yaml`
+Add a check with **Add**, in a `lotse.yaml`
 ([Configuration as code](configuration.md)), or with a container's labels.
-**Add check** asks what to watch, a website, an API, a port, a
-certificate, a cron job, a domain or a DNS record, and **Test now** runs it
-once from the hub before it is added.
+**Add** asks for an address and works out what it is: a URL or a name is a
+website, `host:port` a port; a cron job is a card of its own. Then it asks
+for which customer, and in which group (a project), and tries the check
+once. A certificate, a domain, a DNS record, or a website with more
+options (a method, headers, conditions) is behind the link under the field,
+where **Test now** runs it once from the hub before it is added.
 
 | Type | What it checks |
 |---|---|
@@ -53,7 +56,7 @@ moves: the name still goes in the request and decides the certificate.
 first), and compares what it finds with `equals`, a string, number, `true`,
 `false` or `null`.
 
-A token goes in as a secret, as a channel's do: typed into **Add check**,
+A token goes in as a secret, as a channel's do: typed into **Add**,
 where it is kept sealed, or in a `lotse.yaml` where it stands, read where
 `lotse apply` runs, or from the hub's environment or secret files when it
 hands the check to its probes:
@@ -108,8 +111,8 @@ certificate that expires, a heartbeat that did not come. To be told:
      alerts sound even in quiet hours.
    - **Webhook**: any address, which gets the alerts as JSON.
 3. **Switch on** the channels that should get the alerts, under
-   **Where alerts go**: in Settings → Notifications for everything, on a
-   customer, project or environment for what is in it. A new channel gets
+   **Where alerts go**: in Settings → Who is told for everything, in a
+   customer's or project's settings for what is in it. A new channel gets
    them right away, unless you switch that off. What is switched on nearest
    wins, so customer X's alerts can go to X's space and nowhere else;
    **As above** goes back to what applies further up. In a `lotse.yaml` this
