@@ -214,6 +214,16 @@ func (n *internet) certNotAfter(name string) time.Time {
 	return n.start.Truncate(time.Hour).Add(time.Duration(days)*24*time.Hour + 7*time.Hour + 13*time.Minute)
 }
 
+// notBefore is when a certificate began: 90 days before it ends, as Let's
+// Encrypt's do, but never after the demo started, or a name with 90 days
+// left would not be valid yet for its first hours.
+func notBefore(notAfter, start time.Time) time.Time {
+	if b := notAfter.Add(-90 * 24 * time.Hour); b.Before(start) {
+		return b
+	}
+	return start.Add(-time.Hour)
+}
+
 // cert is the certificate of a name, made the first time it is asked for.
 func (n *internet) cert(name string) (*tls.Certificate, error) {
 	if name == "" {
@@ -231,7 +241,7 @@ func (n *internet) cert(name string) (*tls.Certificate, error) {
 		SerialNumber: big.NewInt(int64(mix(seed(name)) >> 2)),
 		Subject:      pkix.Name{CommonName: name},
 		DNSNames:     []string{name},
-		NotBefore:    notAfter.Add(-90 * 24 * time.Hour),
+		NotBefore:    notBefore(notAfter, n.start),
 		NotAfter:     notAfter,
 		KeyUsage:     x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
