@@ -124,7 +124,8 @@ export function Chart({ data, lines, format, range, events = [], max, binary, he
         {
           font: "12px 'Fira Sans', system-ui, sans-serif",
           stroke: css(chrome.muted),
-          grid: { stroke: css(chrome.grid), width: 1 },
+          // Time needs no lines across the plot; the values do.
+          grid: { show: false },
           ticks: { stroke: css(chrome.axis), width: 1 },
           values: timeTicks,
           // Over more than a day, a tick may need its weekday too, which
@@ -149,6 +150,9 @@ export function Chart({ data, lines, format, range, events = [], max, binary, he
           label: l.label,
           stroke: css(palette[i]),
           width: 2,
+          // Under the first line, a faint area, so that the eye finds it
+          // first; the others stay lines.
+          fill: i === 0 ? (u: uPlot) => fade(u, css(palette[i])) : undefined,
           // Dots while there are only a few readings, which lines alone
           // would not show.
           points: { show: (u: uPlot) => u.data[0].length <= 30, size: 5 },
@@ -210,4 +214,20 @@ export function Chart({ data, lines, format, range, events = [], max, binary, he
       )}
     </div>
   );
+}
+
+// fade is a color running from faint at the top of the plot to nothing at
+// its foot.
+function fade(u: uPlot, color: string): CanvasGradient | string {
+  // Before the plot is laid out, it has no box yet.
+  if (!Number.isFinite(u.bbox?.top) || !Number.isFinite(u.bbox?.height)) return alpha(color, 0.08);
+  const g = u.ctx.createLinearGradient(0, u.bbox.top, 0, u.bbox.top + u.bbox.height);
+  g.addColorStop(0, alpha(color, 0.16));
+  g.addColorStop(1, alpha(color, 0));
+  return g;
+}
+
+// alpha gives an oklch() color an opacity.
+function alpha(color: string, a: number): string {
+  return color.startsWith("oklch(") && !color.includes("/") ? color.replace(/\)$/, ` / ${a})`) : color;
 }

@@ -29,6 +29,7 @@
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
     --color-ok: var(--ok);
+    --color-ok-soft: var(--ok-soft);
     --color-warn: var(--warn);
     --color-crit: var(--crit);
     --color-unknown: var(--unknown);
@@ -97,6 +98,8 @@
     --ring: oklch(0.55 0.19 277);
     --brand: oklch(0.52 0.2 277);
     --ok: oklch(0.6 0.17 150);
+    /* OK where it is only the ground, such as a day without trouble. */
+    --ok-soft: oklch(0.85 0.09 152);
     --warn: oklch(0.72 0.18 62);
     --crit: oklch(0.57 0.23 27);
     --unknown: oklch(0.6 0.01 275);
@@ -138,6 +141,7 @@
     --ring: oklch(0.66 0.13 277);
     --brand: oklch(0.6 0.19 277);
     --ok: oklch(0.75 0.18 150);
+    --ok-soft: oklch(0.48 0.09 152);
     --warn: oklch(0.83 0.17 72);
     --crit: oklch(0.67 0.22 25);
     --unknown: oklch(0.62 0.01 275);
@@ -162,6 +166,18 @@
     background: var(--card);
     color: var(--foreground);
     box-shadow: 0 0 0 1px var(--border), 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+/* The halo of a big status dot: it grows and fades, over and over. */
+@keyframes status-halo {
+    0% { transform: scale(1); opacity: 0.45; }
+    70%, 100% { transform: scale(2.4); opacity: 0; }
+}
+.status-halo {
+    animation: status-halo 5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    .status-halo { animation: none; transform: scale(1.8); opacity: 0.2; }
 }
 
 @layer base {
@@ -195,8 +211,9 @@
   font-size: 12px;
   color: var(--muted-foreground);
 }
-.u-legend th {
-  font-weight: 500;
+.u-legend th,
+.u-legend .u-label {
+  font-weight: 400 !important;
 }
 /* A short line in the series' color instead of uPlot's box. */
 .u-legend .u-marker {
