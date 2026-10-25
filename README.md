@@ -1,5 +1,10 @@
 <h1><picture><source media="(prefers-color-scheme: dark)" srcset="site/logo-dark.svg"><img src="site/logo.svg" alt="lotse" height="40"></picture></h1>
 
+> [!NOTE]
+> This is lotse 0.1, kept here for reference and no longer developed. lotse
+> starts over at [cowlhq/lotse](https://github.com/cowlhq/lotse), with a
+> simpler model and checks first.
+
 A lean, self-hosted monitoring tool for machines across several customers and
 projects: host and Docker metrics from an agent, HTTP, TLS, TCP and heartbeat
 checks from the outside, alerting, and one place to look at it all.
