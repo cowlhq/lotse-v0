@@ -30,4 +30,5 @@ old one.
 | [0022](0022-website.md) | lotse.sh presents lotse and carries its documentation | 2026-10-16 |
 | [0023](0023-users.md) | Users are invited, and may be kept to one customer | 2026-10-16 |
 | [0024](0024-check-secrets.md) | Checks have secrets, as channels do | 2026-10-16 |
-| [0026](0026-interface.md) | A bar on top, and a home page that shows what there is | 2026-10-24 |
+| [0026](0026-interface.md) | A bar on top, and a home page that shows what there is (replaced by 0027) | 2026-10-24 |
+| [0027](0027-things.md) | Things, not hosts and checks | 2026-10-25 |
